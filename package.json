@@ -1,0 +1,12 @@
+{
+    "name": "slime",
+    "version": "0.0.0",
+    "description": "Slime",
+    "main": "slime.js",
+    "author": {
+        "name": ""
+    },
+    "dependencies": {
+        "http-server": "^14.1.1"
+    }
+}

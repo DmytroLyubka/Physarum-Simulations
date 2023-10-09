@@ -362,5 +362,8 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 
-# Test JavaScript files
+# JavaScript test files
 **/test.js
+
+# JavaScript package lock files
+**/package-lock.json
