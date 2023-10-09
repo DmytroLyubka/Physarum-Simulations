@@ -60,7 +60,6 @@ function setup() {
         }
         agents.push(newAgent)
     }
-
 }
 
 /**

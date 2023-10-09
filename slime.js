@@ -54,7 +54,6 @@ function setup() {
         }
         agents.push(newAgent)
     }
-
 }
 
 /**
@@ -102,7 +101,7 @@ const deposit = (agent, trailMap) => {
 const decay = (trailMap) => {
     for (let i = 0; i < canvasWidth; i++) {
         for (let j = 0; j < canvasHeight; j++) {
-            trailMap[i][j] = max(0, trailMap[i][j] - 0.1)
+            trailMap[i][j] = max(0, trailMap[i][j] - trailMapDecay)
         }
     }
 }
