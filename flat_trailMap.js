@@ -1,9 +1,15 @@
-// Canvas dimensions
-const canvasWidth = 850
-const canvasHeight = 850
+/* Proof of concept slime simulation using a flat array structure for the
+ * trail map as opposed to a multidimensional matrix structure.
+ * Theoretically improves performance, can be used if matrix approach hits
+ * performance ceiling.
+ */
 
-// Collects trail deposits. Initialized as an zero NxM multidimensional array.
-let trailMap = Array.from({ length: canvasHeight }, () => Array(canvasWidth).fill(0))
+// Canvas dimensions
+const canvasWidth = 400
+const canvasHeight = 400
+
+// Collects trail deposits. Initialized as an zero N array.
+let trailMap = Array(canvasWidth * canvasHeight).fill(0)
 const trailMapDecay = 0.1
 
 let agents = []
@@ -65,23 +71,23 @@ const diffuse = (agent, trailMap) => {
     /* Centre cell is diffused using a 3x3 kernel. The remaining 8 cells are
      * diffused using an average between themselves and the centre cell
      */
-    let x = parseInt(agent.x)
-    let y = parseInt(agent.y)
+    const x = parseInt(agent.x)
+    const y = parseInt(agent.y)
 
     // y+1 row
-    trailMap[mod(x - 1, canvasWidth)][mod(y + 1, canvasHeight)] = (trailMap[mod(x - 1, canvasWidth)][mod(y + 1, canvasHeight)] + trailMap[x][y]) / 2
-    trailMap[x][mod(y + 1, canvasHeight)] = (trailMap[x][mod(y + 1, canvasHeight)] + trailMap[x][y]) / 2
-    trailMap[mod(x + 1, canvasWidth)][mod(y + 1, canvasHeight)] = (trailMap[mod(x + 1, canvasWidth)][mod(y + 1, canvasHeight)] + trailMap[x][y]) / 2
+    trailMap[mod(x - 1, canvasWidth) + mod(y + 1, canvasHeight) * canvasWidth] = (trailMap[mod(x - 1, canvasWidth) + mod(y + 1, canvasHeight) * canvasWidth] + trailMap[x + y * canvasWidth]) / 2
+    trailMap[x + mod(y + 1, canvasHeight) * canvasWidth] = (trailMap[x + mod(y + 1, canvasHeight) * canvasWidth] + trailMap[x + y * canvasWidth]) / 2
+    trailMap[mod(x + 1, canvasWidth) + mod(y + 1, canvasHeight) * canvasWidth] = (trailMap[mod(x + 1, canvasWidth) + mod(y + 1, canvasHeight) * canvasWidth] + trailMap[x + y * canvasWidth]) / 2
 
     // y row
-    trailMap[mod(x - 1, canvasWidth)][y] = (trailMap[mod(x - 1, canvasWidth)][y] + trailMap[x][y]) / 2
-    trailMap[x][y] = (trailMap[mod(x - 1, canvasWidth)][mod(y + 1, canvasHeight)] + trailMap[x][mod(y + 1, canvasHeight)] + trailMap[mod(x + 1, canvasWidth)][mod(y + 1, canvasHeight)] + trailMap[mod(x - 1, canvasWidth)][y] + trailMap[x][y] + trailMap[mod(x + 1, canvasWidth)][y] + trailMap[mod(x - 1, canvasWidth)][mod(y - 1, canvasHeight)] + trailMap[x][mod(y - 1, canvasHeight)] + trailMap[mod(x + 1, canvasWidth)][mod(y - 1, canvasHeight)]) / 9
-    trailMap[mod(x + 1, canvasWidth)][y] = (trailMap[mod(x + 1, canvasWidth)][y] + trailMap[x][y]) / 2
+    trailMap[mod(x - 1, canvasWidth) + y * canvasWidth] = (trailMap[mod(x - 1, canvasWidth) + y * canvasWidth] + trailMap[x + y * canvasWidth]) / 2
+    trailMap[x + y * canvasWidth] = (trailMap[mod(x - 1, canvasWidth) + mod(y + 1, canvasHeight) * canvasWidth] + trailMap[x + mod(y + 1, canvasHeight) * canvasWidth] + trailMap[mod(x + 1, canvasWidth) + mod(y + 1, canvasHeight) * canvasWidth] + trailMap[mod(x - 1, canvasWidth) + y * canvasWidth] + trailMap[x + y * canvasWidth] + trailMap[mod(x + 1, canvasWidth) + y * canvasWidth] + trailMap[mod(x - 1, canvasWidth) + mod(y - 1, canvasHeight) * canvasWidth] + trailMap[x + mod(y - 1, canvasHeight) * canvasWidth] + trailMap[mod(x + 1, canvasWidth) + mod(y - 1, canvasHeight) * canvasWidth]) / 9
+    trailMap[mod(x + 1, canvasWidth) + y * canvasWidth] = (trailMap[mod(x + 1, canvasWidth) + y * canvasWidth] + trailMap[x + y * canvasWidth]) / 2
 
     // y-1 row
-    trailMap[mod(x - 1, canvasWidth)][mod(y - 1, canvasHeight)] = (trailMap[mod(x - 1, canvasWidth)][mod(y - 1, canvasHeight)] + trailMap[x][y]) / 2
-    trailMap[x][mod(y - 1, canvasHeight)] = (trailMap[x][mod(y - 1, canvasHeight)] + trailMap[x][y]) / 2
-    trailMap[mod(x + 1, canvasWidth)][mod(y - 1, canvasHeight)] = (trailMap[mod(x + 1, canvasWidth)][mod(y - 1, canvasHeight)] + trailMap[x][y]) / 2
+    trailMap[mod(x - 1, canvasWidth) + mod(y - 1, canvasHeight) * canvasWidth] = (trailMap[mod(x - 1, canvasWidth) + mod(y - 1, canvasHeight) * canvasWidth] + trailMap[x + y * canvasWidth]) / 2
+    trailMap[x + mod(y - 1, canvasHeight) * canvasWidth] = (trailMap[x + mod(y - 1, canvasHeight) * canvasWidth] + trailMap[x + y * canvasWidth]) / 2
+    trailMap[mod(x + 1, canvasWidth) + mod(y - 1, canvasHeight) * canvasWidth] = (trailMap[mod(x + 1, canvasWidth) + mod(y - 1, canvasHeight) * canvasWidth] + trailMap[x + y * canvasWidth]) / 2
 }
 
 /**
@@ -92,7 +98,7 @@ const diffuse = (agent, trailMap) => {
 const deposit = (agent, trailMap) => {
     let x = parseInt(agent.x)
     let y = parseInt(agent.y)
-    trailMap[x][y] += agent.depositValue
+    trailMap[x + y * canvasWidth] += agent.depositValue
 }
 
 /**
@@ -100,10 +106,8 @@ const deposit = (agent, trailMap) => {
  * @param {any} trailMap
  */
 const decay = (trailMap) => {
-    for (let i = 0; i < canvasWidth; i++) {
-        for (let j = 0; j < canvasHeight; j++) {
-            trailMap[i][j] = max(0, trailMap[i][j] - 0.1)
-        }
+    for (let i = 0; i < trailMap.length; i++) {
+        trailMap[i] = max(0, trailMap[i] - trailMapDecay)
     }
 }
 
@@ -119,12 +123,12 @@ const updateSensors = (agent) => {
 
     agent.sensors.left = {
         x: parseInt(round(cos(agent.angle + agent.sensorAngle) * agent.sensorOffset) + agent.x),
-        y: parseInt(round(sin(agent.angle + agent.sensorAngle) * agent.sensorOffset) + agent.y)
+        y: parseInt(round(sin(agent.angle + agent.sensorAngle) * agent.sensorOffset) + agent.y),
     }
 
     agent.sensors.right = {
         x: parseInt(round(cos(agent.angle - agent.sensorAngle) * agent.sensorOffset) + agent.x),
-        y: parseInt(round(sin(agent.angle - agent.sensorAngle) * agent.sensorOffset) + agent.y)
+        y: parseInt(round(sin(agent.angle - agent.sensorAngle) * agent.sensorOffset) + agent.y),
     }
 }
 
@@ -156,9 +160,9 @@ function update() {
         adjustForBoundaries(agent.sensors.right)
 
 
-        let frontTrail = trailMap[agent.sensors.front.x][agent.sensors.front.y]
-        let leftTrail = trailMap[agent.sensors.left.x][agent.sensors.left.y]
-        let rightTrail = trailMap[agent.sensors.right.x][agent.sensors.right.y]
+        let frontTrail = trailMap[agent.sensors.front.x + agent.sensors.front.y * canvasWidth]
+        let leftTrail = trailMap[agent.sensors.left.x + agent.sensors.left.y * canvasWidth]
+        let rightTrail = trailMap[agent.sensors.right.x + agent.sensors.right.y * canvasWidth]
 
         if (frontTrail > leftTrail && frontTrail > rightTrail) { // front is strongest
             // pass
@@ -201,8 +205,10 @@ function update() {
             rect(agent.sensors.left.x, agent.sensors.left.y, particleSize)
             rect(agent.sensors.right.x, agent.sensors.right.y, particleSize)
         }
+
     }
     decay(trailMap)
+
 }
 
 function draw() {

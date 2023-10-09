@@ -363,7 +363,8 @@ MigrationBackup/
 FodyWeavers.xsd
 
 # JavaScript test files
-**/test.js
+**/test*.js
+**/*_test.js
 
 # JavaScript package lock files
 **/package-lock.json
