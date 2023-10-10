@@ -4,11 +4,13 @@ import * as algorithm from './algorithm.mjs'
 const canvasWidth = 300
 const canvasHeight = 300
 const agentCollision = false
+const trailMapDecay = 0.1
 
 // Update variables in algorithm
 algorithm.changeDimensions(canvasWidth, canvasHeight)
 algorithm.changeAgentAcount(canvasWidth * canvasHeight * 0.15)
 algorithm.setAgentCollision(agentCollision)
+algorithm.setTrailMapDecay(trailMapDecay)
 
 const particleSize = 1 // visual size of each agent's particle
 
@@ -48,6 +50,10 @@ function setup() {
  * Draws agents on canvas.
  */
 const drawAgents = () => {
+    // Refresh background with lowered opacity to create particle tails.
+    fill(0, 0, 0, 24)
+    rect(0, 0, canvasWidth, canvasHeight)
+
     for (const agent of algorithm.agents) {
         // Draw agents
         fill(255, 255, 255, 128)
@@ -61,10 +67,6 @@ const drawAgents = () => {
             rect(agent.sensors.right.x, agent.sensors.right.y, particleSize)
         }
     }
-
-    // Refresh background with lowered opacity to create particle tails.
-    fill(0, 0, 0, 15)
-    rect(0, 0, canvasWidth, canvasHeight)
 }
 
 /**

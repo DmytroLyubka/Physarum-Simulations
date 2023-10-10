@@ -2,7 +2,7 @@
 export let canvasWidth, canvasHeight
 
 export let trailMap, physicalMap
-const trailMapDecay = 0.1
+let trailMapDecay 
 
 export let agents = []
 export let agentCount
@@ -20,7 +20,7 @@ export const changeDimensions = (x, y) => {
 
 /**
  * Changes agentCollision variable.
- * @param {any} state
+ * @param {bool} state
  */
 export const setAgentCollision = (state) => {
     agentCollision = state
@@ -32,6 +32,14 @@ export const setAgentCollision = (state) => {
  */
 export const changeAgentAcount = (inputAgentCount) => {
     agentCount = inputAgentCount
+}
+
+/**
+ * Sets trailMapDecay variable.
+ * @param {number} amount
+ */
+export const setTrailMapDecay = (amount) => {
+    trailMapDecay = amount
 }
 
 /**
@@ -82,6 +90,7 @@ export const init = () => {
 
 /**
  * Diffuse trail around agent.
+ * @param {any} agent
  * @param {any} trailMap
  */
 const diffuse = (agent, trailMap) => {
