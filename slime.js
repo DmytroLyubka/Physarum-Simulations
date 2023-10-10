@@ -195,7 +195,7 @@ const displayFps = () => {
 /**
  * Updates canvas on each frame
  */
-function update() {
+const update = () => {
     for (const agent of agents) {
         // Move agents
         moveAgent(agent, [agent.stepSize * cos(agent.angle), agent.stepSize * sin(agent.angle)])
