@@ -11,7 +11,7 @@ Clone repository, install project dependencies (see `package.json`). Navigate to
 
 - `algorithm.mjs` - Contains slime mould simulation algorithm based the 2010 paper by Jeff Jones https://sci-hub.se/https://doi.org/10.1162/artl.2010.16.2.16202.
 
-- `draw.mjs` - Runs algorithm and draw agents on canvas.
+- `draw.mjs` - Runs algorithm and draw agents on canvas. Two visualization methods: display agents or display trail map values. Agent position is sampled at each algorithm step and displayed on canvas. Sampling the trail map at each algorithm step is far too performance intensive, so the map is sampled every X frames, defined by the user.
 
 
 `./misc/`
