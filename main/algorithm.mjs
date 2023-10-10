@@ -1,22 +1,22 @@
-// Canvas dimensions
-const canvasWidth = 500
-const canvasHeight = 500
+// Canvas dimensions.
+export let canvasWidth, canvasHeight
 
-// Collects trail deposits. Initialized as a zero NxM multidimensional array.
-let trailMap = Array.from({ length: canvasHeight }, () => Array(canvasWidth).fill(0))
+export let trailMap, physicalMap
 const trailMapDecay = 0.1
 
-// Tracks which pixels are taken up by a physical object. Initialized as a zero NxM multidimensional array.
-let physicalMap = Array.from({ length: canvasHeight }, () => Array(canvasWidth).fill(0))
-
-let agents = []
+export let agents = []
 const agentCount = 10000
-const particleSize = 1 // visual size of each agent's particle
 const agentCollision = false // should agents collide with each other
 
-// Debugging settings
-const showSensors = false
-const showFps = true
+/**
+ * Changes variables canvasWidth and canvasHeight
+ * @param {any} x
+ * @param {any} y
+ */
+export const changeDimensions = (x, y) => {
+    canvasWidth = x
+    canvasHeight = y
+}
 
 /**
  * Evaluates N mod M, supports negative N (native JS % does not).
@@ -28,12 +28,12 @@ const mod = (n, m) => {
     return ((n % m) + m) % m
 }
 
-/**
- * Initial canvas setup.
- */
-function setup() {
-    createCanvas(canvasWidth, showFps ? canvasHeight + 20 : canvasHeight)
-    background(0)
+export const init = () => {
+    // Collects trail deposits. Initialized as a zero NxM multidimensional array.
+    trailMap = Array.from({ length: canvasHeight }, () => Array(canvasWidth).fill(0))
+
+    // Tracks which pixels are taken up by a physical object. Initialized as a zero NxM multidimensional array.
+    physicalMap = Array.from({ length: canvasHeight }, () => Array(canvasWidth).fill(0))
 
     for (let i = 0; i < agentCount; i++) {
         const newAgent = {
@@ -64,9 +64,9 @@ function setup() {
 }
 
 /**
- * Diffuse trail around agent.
- * @param {any} trailMap
- */
+* Diffuse trail around agent.
+* @param {any} trailMap
+*/
 const diffuse = (agent, trailMap) => {
     /* Centre cell is diffused using a 3x3 kernel. The remaining 8 cells are
      * diffused using an average between themselves and the centre cell
@@ -91,10 +91,10 @@ const diffuse = (agent, trailMap) => {
 }
 
 /**
- * Deposits value in trail map at agent's position.
- * @param {any} agent
- * @param {any} trailMap
- */
+* Deposits value in trail map at agent's position.
+* @param {any} agent
+* @param {any} trailMap
+*/
 const deposit = (agent, trailMap) => {
     let x = parseInt(agent.x)
     let y = parseInt(agent.y)
@@ -102,11 +102,11 @@ const deposit = (agent, trailMap) => {
 }
 
 /**
- * Takes an object with properties (x,y), adds/removes physical location entry of object in physicalMap depending on the value of type.
- * @param {any} obj
- * @param {any} physicalMap
- * @param {string} type 'add' or 'remove'
- */
+* Takes an object with properties (x,y), adds/removes physical location entry of object in physicalMap depending on the value of type.
+* @param {any} obj
+* @param {any} physicalMap
+* @param {string} type 'add' or 'remove'
+*/
 const locationDump = (obj, physicalMap, type) => {
     const x = parseInt(obj.x)
     const y = parseInt(obj.y)
@@ -115,18 +115,18 @@ const locationDump = (obj, physicalMap, type) => {
 }
 
 /**
- * Moves agent by a specified amount.
- * @param {any} obj
- * @param {any} amount
- */
+* Moves agent by a specified amount.
+* @param {any} agent
+* @param {any} amount
+*/
 const moveAgent = (agent, amount) => {
-    future_x = mod(agent.x + amount[0], canvasWidth) 
-    future_y = mod(agent.y + amount[1], canvasHeight) 
+    const future_x = mod(agent.x + amount[0], canvasWidth)
+    const future_y = mod(agent.y + amount[1], canvasHeight)
 
 
     // Suggested agent's location is already filled.
     if (agentCollision && physicalMap[parseInt(future_x)][parseInt(future_y)] != 0) {
-        agent.angle = random(0, 2*PI)
+        agent.angle = random(0, 2 * PI)
         return
     }
 
@@ -141,9 +141,9 @@ const moveAgent = (agent, amount) => {
 }
 
 /**
- * Decays all trail avalues by a fixed amount.
- * @param {any} trailMap
- */
+* Decays all trail avalues by a fixed amount.
+* @param {any} trailMap
+*/
 const decay = (trailMap) => {
     for (let i = 0; i < canvasWidth; i++) {
         for (let j = 0; j < canvasHeight; j++) {
@@ -153,9 +153,9 @@ const decay = (trailMap) => {
 }
 
 /**
- * Updates position of agent's sensors.
- * @param {agent} agent
- */
+* Updates position of agent's sensors.
+* @param {agent} agent
+*/
 const updateSensors = (agent) => {
     agent.sensors.front = {
         x: parseInt(round(cos(agent.angle) * agent.sensorOffset) + agent.x),
@@ -174,28 +174,16 @@ const updateSensors = (agent) => {
 }
 
 /**
- * Ensures that object with properties (x, y) is always visible on canvas.
- * @param {any} obj
- */
+* Ensures that object with properties (x, y) is always visible on canvas.
+* @param {any} obj
+*/
 const adjustForBoundaries = (obj) => {
     obj.x = mod(obj.x, canvasWidth)
     obj.y = mod(obj.y, canvasHeight)
 }
 
-const displayFps = () => {
-    if (showFps) {
-        fill(0, 0, 0, 255)
-        rect(0, canvasHeight, canvasWidth, canvasHeight + 20)
-
-        fill(255, 255, 255, 255)
-        text(`FPS: ${round(frameRate())}`, 10, canvasHeight + 15)
-    }
-}
-
-/**
- * Updates canvas on each frame
- */
-const update = () => {
+// Perform a step in the simulation algorithm.
+export const simulationStep = () => {
     for (const agent of agents) {
         // Move agents
         moveAgent(agent, [agent.stepSize * cos(agent.angle), agent.stepSize * sin(agent.angle)])
@@ -206,7 +194,6 @@ const update = () => {
         adjustForBoundaries(agent.sensors.front)
         adjustForBoundaries(agent.sensors.left)
         adjustForBoundaries(agent.sensors.right)
-
 
         let frontTrail = trailMap[agent.sensors.front.x][agent.sensors.front.y]
         let leftTrail = trailMap[agent.sensors.left.x][agent.sensors.left.y]
@@ -241,30 +228,6 @@ const update = () => {
         // Diffuse trail map before depositing a new chemoattractant value
         diffuse(agent, trailMap)
         deposit(agent, trailMap)
-
-        // Draw agents
-        fill(255, 255, 255, 128)
-        rect(agent.x, agent.y, particleSize)
-
-        // Draw sensors (for debugging)
-        if (showSensors) {
-            fill(255, 0, 0, 255)
-            rect(agent.sensors.front.x, agent.sensors.front.y, particleSize)
-            rect(agent.sensors.left.x, agent.sensors.left.y, particleSize)
-            rect(agent.sensors.right.x, agent.sensors.right.y, particleSize)
-        }
     }
     decay(trailMap)
-}
-
-function draw() {
-    noStroke()
-
-    // Refresh background with lowered opacity to create particle tails.
-    fill(0, 0, 0, 24)
-    rect(0, 0, canvasWidth, canvasHeight)
-
-    displayFps()
-
-    update()
 }
