@@ -1,15 +1,22 @@
 // Canvas dimensions
-const canvasWidth = 850
-const canvasHeight = 850
+const canvasWidth = 500
+const canvasHeight = 500
 
-// Collects trail deposits. Initialized as an zero NxM multidimensional array.
+// Collects trail deposits. Initialized as a zero NxM multidimensional array.
 let trailMap = Array.from({ length: canvasHeight }, () => Array(canvasWidth).fill(0))
 const trailMapDecay = 0.1
 
+// Tracks which pixels are taken up by a physical object. Initialized as a zero NxM multidimensional array.
+let physicalMap = Array.from({ length: canvasHeight }, () => Array(canvasWidth).fill(0))
+
 let agents = []
-let agentCount = 8000
-let particleSize = 1 // visual size of each agent's particle
-let showSensors = false
+const agentCount = 10000
+const particleSize = 1 // visual size of each agent's particle
+const agentCollision = false // should agents collide with each other
+
+// Debugging settings
+const showSensors = false
+const showFps = true
 
 /**
  * Evaluates N mod M, supports negative N (native JS % does not).
@@ -25,7 +32,7 @@ const mod = (n, m) => {
  * Initial canvas setup.
  */
 function setup() {
-    createCanvas(canvasWidth, canvasHeight)
+    createCanvas(canvasWidth, showFps ? canvasHeight + 20 : canvasHeight)
     background(0)
 
     for (let i = 0; i < agentCount; i++) {
@@ -95,6 +102,45 @@ const deposit = (agent, trailMap) => {
 }
 
 /**
+ * Takes an object with properties (x,y), adds/removes physical location entry of object in physicalMap depending on the value of type.
+ * @param {any} obj
+ * @param {any} physicalMap
+ * @param {string} type 'add' or 'remove'
+ */
+const locationDump = (obj, physicalMap, type) => {
+    const x = parseInt(obj.x)
+    const y = parseInt(obj.y)
+
+    physicalMap[x][y] = type == 'add' ? 1 : 0
+}
+
+/**
+ * Moves agent by a specified amount.
+ * @param {any} obj
+ * @param {any} amount
+ */
+const moveAgent = (agent, amount) => {
+    future_x = mod(agent.x + amount[0], canvasWidth) 
+    future_y = mod(agent.y + amount[1], canvasHeight) 
+
+
+    // Suggested agent's location is already filled.
+    if (agentCollision && physicalMap[parseInt(future_x)][parseInt(future_y)] != 0) {
+        agent.angle = random(0, 2*PI)
+        return
+    }
+
+    if (agentCollision) {
+        locationDump(agent, physicalMap, 'remove')
+    }
+    agent.x = future_x
+    agent.y = future_y
+    if (agentCollision) {
+        locationDump(agent, physicalMap, 'add')
+    }
+}
+
+/**
  * Decays all trail avalues by a fixed amount.
  * @param {any} trailMap
  */
@@ -136,18 +182,25 @@ const adjustForBoundaries = (obj) => {
     obj.y = mod(obj.y, canvasHeight)
 }
 
+const displayFps = () => {
+    if (showFps) {
+        fill(0, 0, 0, 255)
+        rect(0, canvasHeight, canvasWidth, canvasHeight + 20)
+
+        fill(255, 255, 255, 255)
+        text(`FPS: ${round(frameRate())}`, 10, canvasHeight + 15)
+    }
+}
+
 /**
  * Updates canvas on each frame
  */
 function update() {
     for (const agent of agents) {
         // Move agents
-        agent.x += agent.stepSize * cos(agent.angle)
-        agent.y += agent.stepSize * sin(agent.angle)
+        moveAgent(agent, [agent.stepSize * cos(agent.angle), agent.stepSize * sin(agent.angle)])
 
-        // Move sensors
         updateSensors(agent)
-
         // Check for boundaries, loop back on other side if boundaries exceeded
         adjustForBoundaries(agent)
         adjustForBoundaries(agent.sensors.front)
@@ -208,7 +261,10 @@ function draw() {
     noStroke()
 
     // Refresh background with lowered opacity to create particle tails.
-    background(0, 25);
+    fill(0, 0, 0, 24)
+    rect(0, 0, canvasWidth, canvasHeight)
+
+    displayFps()
 
     update()
 }
