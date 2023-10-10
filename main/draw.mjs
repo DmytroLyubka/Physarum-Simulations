@@ -7,7 +7,7 @@ const canvasHeight = 500
 algorithm.changeDimensions(canvasWidth, canvasHeight)
 const particleSize = 1 // visual size of each agent's particle
 
-const visualizationType = 'agent' // 'agent' or 'trailMap'
+const visualizationType = 'trailMap' // 'agent' or 'trailMap'
 const trailMapVisualizationSampleRate = 100 // sample trail map for visualization every X frames
 
 // Debugging settings
@@ -92,7 +92,7 @@ const update = () => {
     if (visualizationType == 'agent') {
         drawAgents()
     }
-    else if (visualizationType == 'trailMap' && frameCount % trailMapVisualizationSampleRate == 0) {
+    else if (visualizationType == 'trailMap' && frameCount % trailMapVisualizationSampleRate == 1) {
         drawTrailMap()
     }
 }
