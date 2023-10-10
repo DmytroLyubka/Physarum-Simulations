@@ -19,11 +19,12 @@ const showFps = true
  */
 const displayFps = () => {
     if (showFps) {
+        const samples = visualizationType == 'agent' ? frameCount : floor(frameCount  /trailMapVisualizationSampleRate) + 1 
         fill(0, 0, 0, 255)
         rect(0, canvasHeight, canvasWidth, canvasHeight + 20)
 
         fill(255, 255, 255, 255)
-        text(`FPS: ${round(frameRate())}`, 10, canvasHeight + 15)
+        text(`FPS: ${round(frameRate())}\t\tSamples: ${samples}\t\tAlgorithm steps: ${frameCount}`, 10, canvasHeight + 15)
     }
 }
 
