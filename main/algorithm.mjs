@@ -5,7 +5,7 @@ export let trailMap, physicalMap
 const trailMapDecay = 0.1
 
 export let agents = []
-const agentCount = 10000
+const agentCount = 6000
 const agentCollision = false // should agents collide with each other
 
 /**
@@ -40,6 +40,7 @@ export const init = () => {
             x: random(0, canvasWidth),
             y: random(0, canvasHeight),
             angle: random(0, 2 * PI), // agent orientation/rotation angle
+            rotationAngle: PI / 4, // angle by which agents should rotate
             stepSize: 1, // how far agent moves per step
             sensorOffset: 9, // sensor offset distance
             sensorAngle: PI / 4, // sensor angle from forward position
@@ -213,13 +214,13 @@ export const simulationStep = () => {
          * sensors have the same trail value, both of which must be higher than the front sensor's.
          */
         else if (frontTrail < leftTrail && frontTrail < rightTrail) { // front is least strong
-            agent.angle += random(PI / 2, -PI / 2)
+            agent.angle = random(0, 1) > 0.5 ? agent.angle + agent.rotationAngle : agent.angle - agent.rotationAngle
         }
         else if (rightTrail < leftTrail) { // right is strongest, rotate right
-            agent.angle += PI / 2
+            agent.angle += agent.rotationAngle
         }
         else if (leftTrail > rightTrail) { // left is strongest, rotate left
-            agent.angle -= PI / 2
+            agent.angle -= agent.rotationAngle
         }
         else { // all sensor trail values are equal
             // pass
