@@ -7,10 +7,12 @@ const canvasHeight = 500
 algorithm.changeDimensions(canvasWidth, canvasHeight)
 const particleSize = 1 // visual size of each agent's particle
 
+const visualizationType = 'agent' // 'agent' or 'trailMap'
+const trailMapVisualizationSampleRate = 100 // sample trail map for visualization every X frames
 
 // Debugging settings
 const showSensors = false
-const showFps = false
+const showFps = true
 
 /**
  * Display FPS.
@@ -25,6 +27,9 @@ const displayFps = () => {
     }
 }
 
+/**
+ * Initial canvas setup.
+ */
 function setup() {
     createCanvas(canvasWidth, showFps ? canvasHeight + 20 : canvasHeight)
     background(0)
@@ -33,11 +38,9 @@ function setup() {
 }
 
 /**
- * Performs algorithm step and draws agents.
+ * Draws agents on canvas.
  */
-const update = () => {
-    algorithm.simulationStep()
-
+const drawAgents = () => {
     for (const agent of algorithm.agents) {
         // Draw agents
         fill(255, 255, 255, 128)
@@ -51,6 +54,47 @@ const update = () => {
             rect(agent.sensors.right.x, agent.sensors.right.y, particleSize)
         }
     }
+
+    // Refresh background with lowered opacity to create particle tails.
+    fill(0, 0, 0, 15)
+    rect(0, 0, canvasWidth, canvasHeight)
+}
+
+/**
+ * Draws trail map on canvas.
+ */
+const drawTrailMap = () => {
+    // Refresh background
+    fill(0, 0, 0, 255)
+    rect(0, 0, canvasWidth, canvasHeight)
+
+    let maxConcentration = 0
+    for (const row of algorithm.trailMap) {
+        maxConcentration = max(maxConcentration, max(row))
+    }
+
+    for (let i = 0; i < algorithm.trailMap.length; i++) {
+        for (let j = 0; j < algorithm.trailMap[i].length; j++) {
+            // Set visual trail particle strength to be relative to the maximum concentration
+            const opacity = algorithm.trailMap[i][j] / maxConcentration * 255
+            fill(255, 255, 255, opacity)
+            rect(i, j, 1)
+        }
+    }
+}
+
+/**
+ * Performs algorithm step and draws agents.
+ */
+const update = () => {
+    algorithm.simulationStep()
+
+    if (visualizationType == 'agent') {
+        drawAgents()
+    }
+    else if (visualizationType == 'trailMap' && frameCount % trailMapVisualizationSampleRate == 0) {
+        drawTrailMap()
+    }
 }
 
 /**
@@ -58,10 +102,6 @@ const update = () => {
  */
 function draw() {
     noStroke()
-
-    // Refresh background with lowered opacity to create particle tails.
-    fill(0, 0, 0, 24)
-    rect(0, 0, canvasWidth, canvasHeight)
 
     displayFps()
 
