@@ -32,6 +32,9 @@ function setup() {
     algorithm.init()
 }
 
+/**
+ * Performs algorithm step and draws agents.
+ */
 const update = () => {
     algorithm.simulationStep()
 
@@ -50,6 +53,9 @@ const update = () => {
     }
 }
 
+/**
+ * Refreshes canvas background and updates the algorithm state.
+ */
 function draw() {
     noStroke()
 

@@ -64,9 +64,9 @@ export const init = () => {
 }
 
 /**
-* Diffuse trail around agent.
-* @param {any} trailMap
-*/
+ * Diffuse trail around agent.
+ * @param {any} trailMap
+ */
 const diffuse = (agent, trailMap) => {
     /* Centre cell is diffused using a 3x3 kernel. The remaining 8 cells are
      * diffused using an average between themselves and the centre cell
@@ -91,10 +91,10 @@ const diffuse = (agent, trailMap) => {
 }
 
 /**
-* Deposits value in trail map at agent's position.
-* @param {any} agent
-* @param {any} trailMap
-*/
+ * Deposits value in trail map at agent's position.
+ * @param {any} agent
+ * @param {any} trailMap
+ */
 const deposit = (agent, trailMap) => {
     let x = parseInt(agent.x)
     let y = parseInt(agent.y)
@@ -102,11 +102,11 @@ const deposit = (agent, trailMap) => {
 }
 
 /**
-* Takes an object with properties (x,y), adds/removes physical location entry of object in physicalMap depending on the value of type.
-* @param {any} obj
-* @param {any} physicalMap
-* @param {string} type 'add' or 'remove'
-*/
+ * Takes an object with properties (x,y), adds/removes physical location entry of object in physicalMap depending on the value of type.
+ * @param {any} obj
+ * @param {any} physicalMap
+ * @param {string} type 'add' or 'remove'
+ */
 const locationDump = (obj, physicalMap, type) => {
     const x = parseInt(obj.x)
     const y = parseInt(obj.y)
@@ -115,10 +115,10 @@ const locationDump = (obj, physicalMap, type) => {
 }
 
 /**
-* Moves agent by a specified amount.
-* @param {any} agent
-* @param {any} amount
-*/
+ * Moves agent by a specified amount.
+ * @param {any} agent
+ * @param {any} amount
+ */
 const moveAgent = (agent, amount) => {
     const future_x = mod(agent.x + amount[0], canvasWidth)
     const future_y = mod(agent.y + amount[1], canvasHeight)
@@ -141,9 +141,9 @@ const moveAgent = (agent, amount) => {
 }
 
 /**
-* Decays all trail avalues by a fixed amount.
-* @param {any} trailMap
-*/
+ * Decays all trail avalues by a fixed amount.
+ * @param {any} trailMap
+ */
 const decay = (trailMap) => {
     for (let i = 0; i < canvasWidth; i++) {
         for (let j = 0; j < canvasHeight; j++) {
@@ -153,9 +153,9 @@ const decay = (trailMap) => {
 }
 
 /**
-* Updates position of agent's sensors.
-* @param {agent} agent
-*/
+ * Updates position of agent's sensors.
+ * @param {agent} agent
+ */
 const updateSensors = (agent) => {
     agent.sensors.front = {
         x: parseInt(round(cos(agent.angle) * agent.sensorOffset) + agent.x),
@@ -174,9 +174,9 @@ const updateSensors = (agent) => {
 }
 
 /**
-* Ensures that object with properties (x, y) is always visible on canvas.
-* @param {any} obj
-*/
+ * Ensures that object with properties (x, y) is always visible on canvas.
+ * @param {any} obj
+ */
 const adjustForBoundaries = (obj) => {
     obj.x = mod(obj.x, canvasWidth)
     obj.y = mod(obj.y, canvasHeight)
