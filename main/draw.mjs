@@ -1,13 +1,18 @@
 import * as algorithm from './algorithm.mjs'
 
 // Canvas dimensions
-const canvasWidth = 500
-const canvasHeight = 500
+const canvasWidth = 300
+const canvasHeight = 300
+const agentCollision = false
 
+// Update variables in algorithm
 algorithm.changeDimensions(canvasWidth, canvasHeight)
+algorithm.changeAgentAcount(canvasWidth * canvasHeight * 0.15)
+algorithm.setAgentCollision(agentCollision)
+
 const particleSize = 1 // visual size of each agent's particle
 
-const visualizationType = 'trailMap' // 'agent' or 'trailMap'
+const visualizationType = 'agent' // 'agent' or 'trailMap'
 const trailMapVisualizationSampleRate = 100 // sample trail map for visualization every X frames
 
 // Debugging settings
@@ -21,10 +26,11 @@ const displayFps = () => {
     if (showFps) {
         const samples = visualizationType == 'agent' ? frameCount : floor(frameCount  /trailMapVisualizationSampleRate) + 1 
         fill(0, 0, 0, 255)
-        rect(0, canvasHeight, canvasWidth, canvasHeight + 20)
+        rect(0, canvasHeight, canvasWidth, canvasHeight + 40)
 
         fill(255, 255, 255, 255)
-        text(`FPS: ${round(frameRate())}\t\tSamples: ${samples}\t\tAlgorithm steps: ${frameCount}`, 10, canvasHeight + 15)
+        text(`FPS: ${round(frameRate())}\t\tSamples: ${samples}`, 10, canvasHeight + 15)
+        text(`Algorithm steps: ${frameCount}`, 10, canvasHeight + 30)
     }
 }
 
@@ -32,7 +38,7 @@ const displayFps = () => {
  * Initial canvas setup.
  */
 function setup() {
-    createCanvas(canvasWidth, showFps ? canvasHeight + 20 : canvasHeight)
+    createCanvas(canvasWidth, showFps ? canvasHeight + 40 : canvasHeight)
     background(0)
 
     algorithm.init()

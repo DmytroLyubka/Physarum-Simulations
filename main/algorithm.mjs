@@ -5,17 +5,33 @@ export let trailMap, physicalMap
 const trailMapDecay = 0.1
 
 export let agents = []
-const agentCount = 6000
-const agentCollision = false // should agents collide with each other
+export let agentCount
+let agentCollision = true // should agents collide with each other
 
 /**
  * Changes variables canvasWidth and canvasHeight
- * @param {any} x
- * @param {any} y
+ * @param {number} x
+ * @param {number} y
  */
 export const changeDimensions = (x, y) => {
     canvasWidth = x
     canvasHeight = y
+}
+
+/**
+ * Changes agentCollision variable.
+ * @param {any} state
+ */
+export const setAgentCollision = (state) => {
+    agentCollision = state
+}
+
+/**
+ * Changes agentCount variable.
+ * @param {number} agentCount
+ */
+export const changeAgentAcount = (inputAgentCount) => {
+    agentCount = inputAgentCount
 }
 
 /**
