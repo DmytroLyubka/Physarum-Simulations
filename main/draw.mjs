@@ -3,19 +3,20 @@ import * as algorithm from './algorithm.mjs'
 // Canvas dimensions
 const canvasWidth = 300
 const canvasHeight = 300
-const agentCollision = false
+const agentCollision = true
 const trailMapDecay = 0.1
 
 // Update variables in algorithm
 algorithm.changeDimensions(canvasWidth, canvasHeight)
-algorithm.changeAgentAcount(5000)
+algorithm.changeAgentAcount(canvasWidth * canvasHeight * 0.1)
 algorithm.setAgentCollision(agentCollision)
 algorithm.setTrailMapDecay(trailMapDecay)
 
 const particleSize = 1 // visual size of each agent's particle
-
+const agentTails = true
 const visualizationType = 'agents' // 'agents' or 'trailMap'
-const trailMapVisualizationSampleRate = 100 // sample trail map for visualization every X frames
+const agentVisualizationSampleRate = 1 // sample trail map for visualization every X frames
+const trailMapVisualizationSampleRate = 50 // sample trail map for visualization every Y frames
 
 // Debugging settings
 const showSensors = false
@@ -26,7 +27,7 @@ const showFps = true
  */
 const displayFps = () => {
     if (showFps) {
-        const samples = visualizationType == 'agent' ? frameCount : floor(frameCount  /trailMapVisualizationSampleRate) + 1 
+        const samples = visualizationType == 'agents' ? floor(frameCount/agentVisualizationSampleRate) : floor(frameCount/trailMapVisualizationSampleRate) + 1 
         fill(0, 0, 0, 255)
         rect(0, canvasHeight, canvasWidth, canvasHeight + 40)
 
@@ -51,12 +52,12 @@ function setup() {
  */
 const drawAgents = () => {
     // Refresh background with lowered opacity to create particle tails.
-    fill(0, 0, 0, 24)
+    fill(0, 0, 0, agentTails ? 24 : 255)
     rect(0, 0, canvasWidth, canvasHeight)
 
     for (const agent of algorithm.agents) {
         // Draw agents
-        fill(255, 255, 255, 128)
+        fill(255, 255, 255, 255)
         rect(agent.x, agent.y, particleSize)
 
         // Draw sensors (for debugging)
@@ -98,7 +99,7 @@ const drawTrailMap = () => {
 const update = () => {
     algorithm.simulationStep()
 
-    if (visualizationType == 'agents') {
+    if (visualizationType == 'agents' && frameCount % agentVisualizationSampleRate == 0) {
         drawAgents()
     }
     else if (visualizationType == 'trailMap' && frameCount % trailMapVisualizationSampleRate == 1) {
@@ -111,9 +112,7 @@ const update = () => {
  */
 function draw() {
     noStroke()
-
     displayFps()
-
     update()
 }
 
