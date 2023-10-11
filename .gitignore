@@ -365,6 +365,8 @@ FodyWeavers.xsd
 # JavaScript test files
 **/test*.js
 **/*_test.js
+**/test*.mjs
+**/*_test.mjs
 
 # JavaScript package lock files
 **/package-lock.json

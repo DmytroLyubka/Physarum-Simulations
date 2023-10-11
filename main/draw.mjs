@@ -8,13 +8,13 @@ const trailMapDecay = 0.1
 
 // Update variables in algorithm
 algorithm.changeDimensions(canvasWidth, canvasHeight)
-algorithm.changeAgentAcount(canvasWidth * canvasHeight * 0.15)
+algorithm.changeAgentAcount(5000)
 algorithm.setAgentCollision(agentCollision)
 algorithm.setTrailMapDecay(trailMapDecay)
 
 const particleSize = 1 // visual size of each agent's particle
 
-const visualizationType = 'agent' // 'agent' or 'trailMap'
+const visualizationType = 'agents' // 'agents' or 'trailMap'
 const trailMapVisualizationSampleRate = 100 // sample trail map for visualization every X frames
 
 // Debugging settings
@@ -98,7 +98,7 @@ const drawTrailMap = () => {
 const update = () => {
     algorithm.simulationStep()
 
-    if (visualizationType == 'agent') {
+    if (visualizationType == 'agents') {
         drawAgents()
     }
     else if (visualizationType == 'trailMap' && frameCount % trailMapVisualizationSampleRate == 1) {

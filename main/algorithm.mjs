@@ -1,3 +1,5 @@
+import { mod, simpleMeanConvolute } from './mathUtils.mjs'
+
 // Canvas dimensions.
 export let canvasWidth, canvasHeight
 
@@ -42,16 +44,6 @@ export const setTrailMapDecay = (amount) => {
     trailMapDecay = amount
 }
 
-/**
- * Evaluates N mod M, supports negative N (native JS % does not).
- * @param {number} n
- * @param {number} m
- * @returns {number}
- */
-const mod = (n, m) => {
-    return ((n % m) + m) % m
-}
-
 export const init = () => {
     // Collects trail deposits. Initialized as a zero NxM multidimensional array.
     trailMap = Array.from({ length: canvasHeight }, () => Array(canvasWidth).fill(0))
@@ -94,9 +86,10 @@ export const init = () => {
  * @param {any} trailMap
  */
 const diffuse = (agent, trailMap) => {
-    /* Centre cell is diffused using a 3x3 kernel. The remaining 8 cells are
-     * diffused using an average between themselves and the centre cell
-     */
+     /* Centre cell is diffused using a 3x3 kernel. The remaining 8 cells are
+      * diffused using an average between themselves and the centre cell
+      */
+     
     let x = parseInt(agent.x)
     let y = parseInt(agent.y)
 
@@ -252,8 +245,9 @@ export const simulationStep = () => {
         }
 
         // Diffuse trail map before depositing a new chemoattractant value
-        diffuse(agent, trailMap)
+        //diffuse(agent, trailMap)
         deposit(agent, trailMap)
     }
+    simpleMeanConvolute(trailMap)
     decay(trailMap)
 }
