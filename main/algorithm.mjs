@@ -55,11 +55,11 @@ export const init = () => {
         const newAgent = {
             x: getRandom(0, canvasWidth),
             y: getRandom(0, canvasHeight),
-            angle: getRandom(0, 2 * PI), // agent orientation/rotation angle
-            rotationAngle: PI / 4, // angle by which agents should rotate
+            angle: getRandom(0, 2 * Math.PI), // agent orientation/rotation angle
+            rotationAngle: Math.PI / 4, // angle by which agents should rotate
             stepSize: 1, // how far agent moves per step
             sensorOffset: 18, // sensor offset distance
-            sensorAngle: PI / 4, // sensor angle from forward position
+            sensorAngle: Math.PI / 4, // sensor angle from forward position
             sensors: {
                 front: {
                     x: 0,
@@ -145,18 +145,14 @@ const moveAgent = (agent, amount) => {
 
     // Suggested agent's location is already filled.
     if (agentCollision && physicalMap[parseInt(future_x)][parseInt(future_y)] != 0) {
-        agent.angle = getRandom(0, 2 * PI)
+        agent.angle = getRandom(0, 2 * Math.PI)
         return
     }
 
-    if (agentCollision) {
-        locationDump(agent, physicalMap, 'remove')
-    }
+    locationDump(agent, physicalMap, 'remove')
     agent.x = future_x
     agent.y = future_y
-    if (agentCollision) {
-        locationDump(agent, physicalMap, 'add')
-    }
+    locationDump(agent, physicalMap, 'add')
 }
 
 /**
