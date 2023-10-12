@@ -1,4 +1,4 @@
-import { mod, simpleMeanConvolute } from './mathUtils.mjs'
+import { mod, simpleMeanConvolute, getRandom } from './mathUtils.mjs'
 
 // Canvas dimensions.
 export let canvasWidth, canvasHeight
@@ -53,12 +53,12 @@ export const init = () => {
 
     for (let i = 0; i < agentCount; i++) {
         const newAgent = {
-            x: random(0, canvasWidth),
-            y: random(0, canvasHeight),
-            angle: random(0, 2 * PI), // agent orientation/rotation angle
+            x: getRandom(0, canvasWidth),
+            y: getRandom(0, canvasHeight),
+            angle: getRandom(0, 2 * PI), // agent orientation/rotation angle
             rotationAngle: PI / 4, // angle by which agents should rotate
             stepSize: 1, // how far agent moves per step
-            sensorOffset: 9, // sensor offset distance
+            sensorOffset: 18, // sensor offset distance
             sensorAngle: PI / 4, // sensor angle from forward position
             sensors: {
                 front: {
@@ -145,7 +145,7 @@ const moveAgent = (agent, amount) => {
 
     // Suggested agent's location is already filled.
     if (agentCollision && physicalMap[parseInt(future_x)][parseInt(future_y)] != 0) {
-        agent.angle = random(0, 2 * PI)
+        agent.angle = getRandom(0, 2 * PI)
         return
     }
 
@@ -166,7 +166,7 @@ const moveAgent = (agent, amount) => {
 const decay = (trailMap) => {
     for (let i = 0; i < canvasWidth; i++) {
         for (let j = 0; j < canvasHeight; j++) {
-            trailMap[i][j] = max(0, trailMap[i][j] - trailMapDecay)
+            trailMap[i][j] = Math.max(0, trailMap[i][j] - trailMapDecay)
         }
     }
 }
@@ -177,18 +177,18 @@ const decay = (trailMap) => {
  */
 const updateSensors = (agent) => {
     agent.sensors.front = {
-        x: parseInt(round(cos(agent.angle) * agent.sensorOffset) + agent.x),
-        y: parseInt(round(sin(agent.angle) * agent.sensorOffset) + agent.y)
+        x: parseInt(Math.round(Math.cos(agent.angle) * agent.sensorOffset) + agent.x),
+        y: parseInt(Math.round(Math.sin(agent.angle) * agent.sensorOffset) + agent.y)
     }
 
     agent.sensors.left = {
-        x: parseInt(round(cos(agent.angle + agent.sensorAngle) * agent.sensorOffset) + agent.x),
-        y: parseInt(round(sin(agent.angle + agent.sensorAngle) * agent.sensorOffset) + agent.y)
+        x: parseInt(Math.round(Math.cos(agent.angle + agent.sensorAngle) * agent.sensorOffset) + agent.x),
+        y: parseInt(Math.round(Math.sin(agent.angle + agent.sensorAngle) * agent.sensorOffset) + agent.y)
     }
 
     agent.sensors.right = {
-        x: parseInt(round(cos(agent.angle - agent.sensorAngle) * agent.sensorOffset) + agent.x),
-        y: parseInt(round(sin(agent.angle - agent.sensorAngle) * agent.sensorOffset) + agent.y)
+        x: parseInt(Math.round(Math.cos(agent.angle - agent.sensorAngle) * agent.sensorOffset) + agent.x),
+        y: parseInt(Math.round(Math.sin(agent.angle - agent.sensorAngle) * agent.sensorOffset) + agent.y)
     }
 }
 
@@ -205,7 +205,7 @@ const adjustForBoundaries = (obj) => {
 export const simulationStep = () => {
     for (const agent of agents) {
         // Move agents
-        moveAgent(agent, [agent.stepSize * cos(agent.angle), agent.stepSize * sin(agent.angle)])
+        moveAgent(agent, [agent.stepSize * Math.cos(agent.angle), agent.stepSize * Math.sin(agent.angle)])
 
         updateSensors(agent)
         // Check for boundaries, loop back on other side if boundaries exceeded
@@ -232,7 +232,7 @@ export const simulationStep = () => {
          * sensors have the same trail value, both of which must be higher than the front sensor's.
          */
         else if (frontTrail < leftTrail && frontTrail < rightTrail) { // front is least strong
-            agent.angle = random(0, 1) > 0.5 ? agent.angle + agent.rotationAngle : agent.angle - agent.rotationAngle
+            agent.angle = getRandom(0, 1) > 0.5 ? agent.angle + agent.rotationAngle : agent.angle - agent.rotationAngle
         }
         else if (rightTrail < leftTrail) { // right is strongest, rotate right
             agent.angle += agent.rotationAngle

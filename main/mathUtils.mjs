@@ -8,6 +8,15 @@ export const mod = (n, m) => {
     return ((n % m) + m) % m
 }
 
+/**
+ * Generates random float between min and max.
+ * @param {number} min
+ * @param {number} max
+ * @returns {number}
+ */
+export const getRandom = (min, max) => {
+    return Math.random() * (max - min) + min
+}
 
 /**
  * Performs simple mean filtering on a matrix using a 3x3 kernel convolution.
