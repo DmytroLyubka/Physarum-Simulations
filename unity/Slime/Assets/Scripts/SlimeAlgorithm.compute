@@ -1,0 +1,68 @@
+#pragma kernel AlgorithmStep
+
+// Agent structure to match that of the slime algorithm.
+struct Agent {
+    float2 position;
+    float angle;
+};
+
+RWStructuredBuffer<Agent> agents; // contains agent structures
+RWTexture2D<float4> trailMap; // tracks agent positions over time
+uint agentCount; // number of agents in simulation
+int width; // texture width
+int height; // texture height
+float deltaTime; // number of seconds each frame is visible for
+float moveSpeed; // agent move speed
+
+// Hash function without Sine: https://www.shadertoy.com/view/4djSRW
+// Provides a pseudorandom method to generate numbers.
+float hash(float3 p)
+{
+    p = frac(p * 0.1031);
+    p += dot(p, p.zyx + 31.32);
+    return frac((p.x + p.y) * p.z);
+}
+
+// Executes algorithm step.
+[numthreads(16,1,1)]
+void AlgorithmStep (uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= agentCount) {
+        return;
+    }
+
+    Agent agent = agents[id.x];
+
+    float2 direction = float2(cos(agent.angle), sin(agent.angle));
+    float2 newPosition = agent.position + direction * moveSpeed * deltaTime;
+
+    // Keep agent within bounds. TODO: Identify opposite edges to simulate torus.
+    // Below block credits: SebLague
+    if (newPosition.x < 0 || newPosition.x >= width || newPosition.y < 0 || newPosition.y >= height) {
+        float random = hash(float3(agent.position.x, agent.position.y, id.x));
+        agents[id.x].angle = random * 2 * 3.1415;
+        newPosition.x = min(width-0.01, max(0, newPosition.x));
+        newPosition.y = min(height-0.01, max(0, newPosition.y));
+    }
+
+    // Set new position and update trail map
+    agents[id.x].position = newPosition;
+    trailMap[int2(newPosition.x, newPosition.y)] = float4(1, 1, 1, 1);
+}
+
+
+#pragma kernel ProcessTrailMap
+
+RWTexture2D<float4> processedTrailMap;
+float decaySpeed;
+
+// Decays all trail map values by a constant.
+[numthreads(8,8,1)]
+void ProcessTrailMap (uint3 id : SV_DispatchThreadID)
+{
+    if (id.x < 0 || id.x >= (uint)width || id.y < 0 || id.y >= (uint)height)
+    {
+		return;
+	}
+    processedTrailMap[id.xy] = max(0, trailMap[id.xy] - decaySpeed * deltaTime);
+}
