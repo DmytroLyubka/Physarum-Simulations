@@ -47,6 +47,7 @@
         "**/build/":true,
         "**/Build/":true,
         "**/Library/":true,
+        "**/Logs/":true,
         "**/library/":true,
         "**/obj/":true,
         "**/Obj/":true,
