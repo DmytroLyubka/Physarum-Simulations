@@ -97,6 +97,13 @@ StyleCopReport.xml
 *.pidb
 *.svclog
 *.scc
+ExportedObj/
+.consulo/
+*.csproj
+*.unityproj
+*.sln
+*.booproj
+*.svd
 
 # Chutzpah Test files
 _Chutzpah*
