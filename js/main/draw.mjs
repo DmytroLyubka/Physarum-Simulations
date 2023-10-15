@@ -1,19 +1,19 @@
 import * as algorithm from './algorithm.mjs'
 
 // Canvas dimensions
-const canvasWidth = 500
-const canvasHeight = 500
+const canvasWidth = 400
+const canvasHeight = 400
 const agentCollision = true
 const trailMapDecay = 0.1
 
 // Update variables in algorithm
 algorithm.changeDimensions(canvasWidth, canvasHeight)
-algorithm.changeAgentAcount(canvasWidth * canvasHeight * 0.1)
+algorithm.changeAgentAcount(canvasWidth * canvasHeight * 0.05)
 algorithm.setAgentCollision(agentCollision)
 algorithm.setTrailMapDecay(trailMapDecay)
 
 const particleSize = 1 // visual size of each agent's particle
-const agentTails = false
+const agentTails = true
 const visualizationType = 'agents' // 'agents' or 'trailMap'
 const agentVisualizationSampleRate = 1 // sample trail map for visualization every X frames
 const trailMapVisualizationSampleRate = 50 // sample trail map for visualization every Y frames
@@ -48,6 +48,8 @@ const mainCanvasSetup = (sketch) => {
      * Initializes main canvas.
      */
     sketch.setup = () => {
+        sketch.setAttributes('willReadFrequently', true)
+
         if (useGPU) { // Enable WEBGL mode if GPU usage is enabled
             sketch.createCanvas(canvasWidth, canvasHeight, sketch.WEBGL)
             bufferImage = sketch.createImage(canvasWidth, canvasHeight)
