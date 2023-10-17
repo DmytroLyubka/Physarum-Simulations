@@ -48,6 +48,21 @@ public class SlimeAlgorithm : MonoBehaviour
 	/// Speed at which to decay trail map.
 	/// </summary>
 	public float decaySpeed;
+	
+	/// <summary>
+	/// Angle at which agents rotate.
+	/// </summary>
+	public float agentRotationAngle;
+	
+	/// <summary>
+	/// Distance between sensors and their agents.
+	/// </summary>
+	public float sensorOffset;
+	
+	/// <summary>
+	/// Angle of sensors relative to their agents.
+	/// </summary>
+	public float sensorAngle;
 
 	/// <summary>
 	/// Initializes algorithm and compute shader parameters.
@@ -100,11 +115,9 @@ public class SlimeAlgorithm : MonoBehaviour
 		algorithmComputeShader.SetFloat("deltaTime", Time.fixedDeltaTime);
 		algorithmComputeShader.SetFloat("moveSpeed", moveSpeed);
 		algorithmComputeShader.SetFloat("decaySpeed", decaySpeed);
-
-		// Hardcoded rotation + sensor values -> it's preferable to make them public
-		algorithmComputeShader.SetFloat("agentRotationAngle", Mathf.PI/4);
-		algorithmComputeShader.SetFloat("sensorOffset", 90);
-		algorithmComputeShader.SetFloat("sensorAngle", Mathf.PI/4);
+		algorithmComputeShader.SetFloat("agentRotationAngle", agentRotationAngle);
+		algorithmComputeShader.SetFloat("sensorOffset", sensorOffset);
+		algorithmComputeShader.SetFloat("sensorAngle", sensorOffset);
 	}
 	
 	/// <summary>

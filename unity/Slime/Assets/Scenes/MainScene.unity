@@ -174,6 +174,9 @@ MonoBehaviour:
   moveSpeed: 10
   algorithmStepsPerFrame: 1
   decaySpeed: 0.1
+  agentRotationAngle: 0.7853982
+  sensorOffset: 90
+  sensorAngle: 0.7853982
 --- !u!1 &1079781145
 GameObject:
   m_ObjectHideFlags: 0
