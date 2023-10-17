@@ -13,6 +13,9 @@ int width; // texture width
 int height; // texture height
 float deltaTime; // number of seconds each frame is visible for
 float moveSpeed; // agent move speed
+float agentRotationAngle; // angle at which agents rotate
+float sensorOffset; // sensor distance from agent
+float sensorAngle; // sensor angle relative to agent
 
 // Hash function without Sine: https://www.shadertoy.com/view/4djSRW
 // Provides a pseudorandom method to generate numbers.
@@ -23,6 +26,29 @@ float hash(float3 p)
     return frac((p.x + p.y) * p.z);
 }
 
+// Evaluates N mod M, supports negative N (native % operator does not)
+float mod(float n, float m)
+{
+    return ((n % m) + m) % m;
+}
+
+// Checks trail map value detected by a sensor with angle sensorDeltaAngle
+// relative to agent.
+float checkSensor(Agent agent, float sensorDeltaAngle)
+{
+    float globalSensorAngle = agent.angle + sensorDeltaAngle;
+    float2 sensorDirection = float2(cos(globalSensorAngle), sin(globalSensorAngle));
+    float2 sensorPosition = agent.position + sensorDirection * sensorOffset;
+
+    int senseX = (int) round(mod(sensorPosition.x, width));
+    int senseY = (int) round(mod(sensorPosition.y, height));
+
+    // Return equally weighted sum of 4 channels. Maybe it makes more sense to
+    // Take the sum of the first 3 (RGB) and multiply it by the alpha value?
+    return dot(trailMap[int2(senseX, senseY)], int4(1, 1, 1, 1));
+}
+
+
 // Executes algorithm step.
 [numthreads(16,1,1)]
 void AlgorithmStep (uint3 id : SV_DispatchThreadID)
@@ -32,17 +58,56 @@ void AlgorithmStep (uint3 id : SV_DispatchThreadID)
     }
 
     Agent agent = agents[id.x];
-
     float2 direction = float2(cos(agent.angle), sin(agent.angle));
     float2 newPosition = agent.position + direction * moveSpeed * deltaTime;
 
-    // Keep agent within bounds. TODO: Identify opposite edges to simulate torus.
-    // Below block credits: SebLague
-    if (newPosition.x < 0 || newPosition.x >= width || newPosition.y < 0 || newPosition.y >= height) {
-        float random = hash(float3(agent.position.x, agent.position.y, id.x));
-        agents[id.x].angle = random * 2 * 3.1415;
-        newPosition.x = min(width-0.01, max(0, newPosition.x));
-        newPosition.y = min(height-0.01, max(0, newPosition.y));
+    // Move agent
+    newPosition.x = mod(newPosition.x, width);
+    newPosition.y = mod(newPosition.y, height);
+
+    // Check sensor trail values
+    float frontTrailValue = checkSensor(agent, 0);
+    float leftTrailValue = checkSensor(agent, sensorAngle);
+    float rightTrailValue = checkSensor(agent, -sensorAngle);
+
+    if (frontTrailValue > leftTrailValue && frontTrailValue > rightTrailValue)
+    {
+        // pass
+    }
+    /* Note: It doesn't really make sense to have this step be random? The fact that
+        * the front sensor is detecting a weaker chemoattractant than the two off-centre
+        * sensors does not imply that the left and right sensors have equal "weight",
+        * it is very much possible that the left sensor has detected a higher trail value
+        * while at the same time the front sensor has detected the lowest trail value (in
+        * which case the agent should rotate left).
+        * 
+        * TODO: Make this step more deterministic, only have random rotation if left and right
+        * sensors have the same trail value, both of which must be higher than the front sensor's.
+        */
+    else if (frontTrailValue > leftTrailValue && frontTrailValue > rightTrailValue)
+    {
+        float randomValue = hash(float3(agent.position.x, agent.position.y, direction.x + direction.y));
+        if (randomValue > 0.5)
+        {
+            agents[id.x].angle += agentRotationAngle;
+        }
+        else
+        {
+            agents[id.x].angle -= agentRotationAngle;
+        }
+    }
+    else if (rightTrailValue < leftTrailValue)
+    {
+        agents[id.x].angle += agentRotationAngle;
+    }
+    else if (leftTrailValue > rightTrailValue)
+    {
+        agents[id.x].angle -= agentRotationAngle;
+    }
+    else
+    {
+        // all sensor trail values are equal
+        // pass
     }
 
     // Set new position and update trail map

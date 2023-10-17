@@ -100,6 +100,11 @@ public class SlimeAlgorithm : MonoBehaviour
 		algorithmComputeShader.SetFloat("deltaTime", Time.fixedDeltaTime);
 		algorithmComputeShader.SetFloat("moveSpeed", moveSpeed);
 		algorithmComputeShader.SetFloat("decaySpeed", decaySpeed);
+
+		// Hardcoded rotation + sensor values -> it's preferable to make them public
+		algorithmComputeShader.SetFloat("agentRotationAngle", Mathf.PI/4);
+		algorithmComputeShader.SetFloat("sensorOffset", 90);
+		algorithmComputeShader.SetFloat("sensorAngle", Mathf.PI/4);
 	}
 	
 	/// <summary>
