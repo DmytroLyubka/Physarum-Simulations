@@ -78,6 +78,11 @@ public class SlimeAlgorithm : MonoBehaviour
 	/// Rate at which to diffuse trail map.
 	/// </summary>
 	public float diffuseRate;
+	
+	/// <summary>
+	/// Width of kernel used for trail map diffusion.
+	/// </summary>
+	public int kernelWidth;
 
 	/// <summary>
 	/// Initializes algorithm and compute shader parameters.
@@ -129,8 +134,10 @@ public class SlimeAlgorithm : MonoBehaviour
 		UpdateSettings();
 	}
 	
+	/// <summary>
+	/// Updates settings in compute shader to match editor values.
+	/// </summary>
 	private void UpdateSettings()
-	
 	{
 		algorithmComputeShader.SetFloat("deltaTime", Time.fixedDeltaTime);
 		algorithmComputeShader.SetInt("agentCount", agentCount);
@@ -142,6 +149,7 @@ public class SlimeAlgorithm : MonoBehaviour
 		algorithmComputeShader.SetBool("diffuse", diffuse);
 		algorithmComputeShader.SetFloat("decayRate", decay ? decayRate : 0);
 		algorithmComputeShader.SetFloat("diffuseRate", diffuse ? diffuseRate : 0);
+		algorithmComputeShader.SetInt("kernelWidth", kernelWidth);
 		
 	}
 	

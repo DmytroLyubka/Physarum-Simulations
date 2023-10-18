@@ -123,6 +123,7 @@ bool decay;
 bool diffuse;
 float decayRate;
 float diffuseRate;
+int kernelWidth;
 
 // Decays and diffuses trail map after agents have moved.
 [numthreads(8,8,1)]
@@ -134,16 +135,16 @@ void ProcessTrailMap (uint3 id : SV_DispatchThreadID)
 	}
 
     float4 sum = 0;
-    for (int x = -1; x <= 1; x++)
+    for (int x = -kernelWidth; x <= kernelWidth; x++)
     {
-        for (int y = -1; y <= 1; y++)
+        for (int y = -kernelWidth; y <= kernelWidth; y++)
         {
             int kernelX = mod(id.x + x, width);
             int kernelY = mod(id.y + y, height);
             sum += trailMap[int2(kernelX, kernelY)];
         }
     }
-    float4 diffusedTrail = sum / 9;
+    float4 diffusedTrail = sum / ((1 + 2*kernelWidth)*(1 + 2*kernelWidth));
     float fixedDiffuseRate = diffuseRate * deltaTime;
     float4 weightedDiffusedTrail = (1 - fixedDiffuseRate) * trailMap[id.xy] + fixedDiffuseRate * diffusedTrail;
     
