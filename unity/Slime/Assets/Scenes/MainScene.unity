@@ -180,7 +180,7 @@ MonoBehaviour:
   diffuse: 1
   decayRate: 0.1
   diffuseRate: 1
-  kernelWidth: 1
+  kernelHalfWidth: 0
 --- !u!1 &1079781145
 GameObject:
   m_ObjectHideFlags: 0

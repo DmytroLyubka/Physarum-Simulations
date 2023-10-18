@@ -80,9 +80,10 @@ public class SlimeAlgorithm : MonoBehaviour
 	public float diffuseRate;
 	
 	/// <summary>
-	/// Width of kernel used for trail map diffusion.
+	/// Width of kernel used for trail map diffusion = 1 + 2 * kernelHalfWidth.
+	/// Kernel dimensions will always be odd.
 	/// </summary>
-	public int kernelWidth;
+	public int kernelHalfWidth;
 
 	/// <summary>
 	/// Initializes algorithm and compute shader parameters.
@@ -149,7 +150,7 @@ public class SlimeAlgorithm : MonoBehaviour
 		algorithmComputeShader.SetBool("diffuse", diffuse);
 		algorithmComputeShader.SetFloat("decayRate", decay ? decayRate : 0);
 		algorithmComputeShader.SetFloat("diffuseRate", diffuse ? diffuseRate : 0);
-		algorithmComputeShader.SetInt("kernelWidth", kernelWidth);
+		algorithmComputeShader.SetInt("kernelHalfWidth", kernelHalfWidth);
 		
 	}
 	
