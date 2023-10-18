@@ -40,12 +40,12 @@ float checkSensor(Agent agent, float sensorDeltaAngle)
     float2 sensorDirection = float2(cos(globalSensorAngle), sin(globalSensorAngle));
     float2 sensorPosition = agent.position + sensorDirection * sensorOffset;
 
-    int senseX = (int) round(mod(sensorPosition.x, width));
-    int senseY = (int) round(mod(sensorPosition.y, height));
+    int sensorCoordX = (int) round(mod(sensorPosition.x, width));
+    int sensorCoordY = (int) round(mod(sensorPosition.y, height));
 
     // Return equally weighted sum of 4 channels. Maybe it makes more sense to
     // Take the sum of the first 3 (RGB) and multiply it by the alpha value?
-    return dot(trailMap[int2(senseX, senseY)], int4(1, 1, 1, 1));
+    return dot(trailMap[int2(sensorCoordX, sensorCoordY)], int4(1, 1, 1, 1));
 }
 
 
@@ -119,9 +119,12 @@ void AlgorithmStep (uint3 id : SV_DispatchThreadID)
 #pragma kernel ProcessTrailMap
 
 RWTexture2D<float4> processedTrailMap;
-float decaySpeed;
+bool decay;
+bool diffuse;
+float decayRate;
+float diffuseRate;
 
-// Decays all trail map values by a constant.
+// Decays and diffuses trail map after agents have moved.
 [numthreads(8,8,1)]
 void ProcessTrailMap (uint3 id : SV_DispatchThreadID)
 {
@@ -129,5 +132,20 @@ void ProcessTrailMap (uint3 id : SV_DispatchThreadID)
     {
 		return;
 	}
-    processedTrailMap[id.xy] = max(0, trailMap[id.xy] - decaySpeed * deltaTime);
+
+    float4 sum = 0;
+    for (int x = -1; x <= 1; x++)
+    {
+        for (int y = -1; y <= 1; y++)
+        {
+            int kernelX = mod(id.x + x, width);
+            int kernelY = mod(id.y + y, height);
+            sum += trailMap[int2(kernelX, kernelY)];
+        }
+    }
+    float4 diffusedTrail = sum / 9;
+    float fixedDiffuseRate = diffuseRate * deltaTime;
+    float4 weightedDiffusedTrail = (1 - fixedDiffuseRate) * trailMap[id.xy] + fixedDiffuseRate * diffusedTrail;
+    
+    processedTrailMap[id.xy] = max(0, weightedDiffusedTrail - decayRate * deltaTime);
 }

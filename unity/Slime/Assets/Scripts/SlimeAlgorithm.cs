@@ -45,11 +45,6 @@ public class SlimeAlgorithm : MonoBehaviour
 	public int algorithmStepsPerFrame;
 	
 	/// <summary>
-	/// Speed at which to decay trail map.
-	/// </summary>
-	public float decaySpeed;
-	
-	/// <summary>
 	/// Angle at which agents rotate.
 	/// </summary>
 	public float agentRotationAngle;
@@ -63,6 +58,26 @@ public class SlimeAlgorithm : MonoBehaviour
 	/// Angle of sensors relative to their agents.
 	/// </summary>
 	public float sensorAngle;
+	
+	/// <summary>
+	/// Toggle trail map decay.
+	/// </summary>
+	public bool decay;
+	
+	/// <summary>
+	/// Toggle trail map diffusion.
+	/// </summary>
+	public bool diffuse;
+	
+	/// <summary>
+	/// Rate at which to decay trail map.
+	/// </summary>
+	public float decayRate;
+	
+	/// <summary>
+	/// Rate at which to diffuse trail map.
+	/// </summary>
+	public float diffuseRate;
 
 	/// <summary>
 	/// Initializes algorithm and compute shader parameters.
@@ -73,7 +88,7 @@ public class SlimeAlgorithm : MonoBehaviour
 		trailMap = new RenderTexture(width, height, 0) 
 		{
 			enableRandomWrite = true,
-			filterMode = FilterMode.Point
+			filterMode = FilterMode.Bilinear
 		};
 		trailMap.Create();
 		
@@ -108,16 +123,26 @@ public class SlimeAlgorithm : MonoBehaviour
 		agentBuffer.SetData(agents);
 		algorithmComputeShader.SetBuffer(0, "agents", agentBuffer);
 
-		// Set parameters in compute shader
-		algorithmComputeShader.SetInt("agentCount", agentCount);
+		// Set initial parameters in compute shader
 		algorithmComputeShader.SetInt("width", width);
 		algorithmComputeShader.SetInt("height", height);
+		UpdateSettings();
+	}
+	
+	private void UpdateSettings()
+	
+	{
 		algorithmComputeShader.SetFloat("deltaTime", Time.fixedDeltaTime);
+		algorithmComputeShader.SetInt("agentCount", agentCount);
 		algorithmComputeShader.SetFloat("moveSpeed", moveSpeed);
-		algorithmComputeShader.SetFloat("decaySpeed", decaySpeed);
 		algorithmComputeShader.SetFloat("agentRotationAngle", agentRotationAngle);
 		algorithmComputeShader.SetFloat("sensorOffset", sensorOffset);
 		algorithmComputeShader.SetFloat("sensorAngle", sensorOffset);
+		algorithmComputeShader.SetBool("decay", decay);
+		algorithmComputeShader.SetBool("diffuse", diffuse);
+		algorithmComputeShader.SetFloat("decayRate", decay ? decayRate : 0);
+		algorithmComputeShader.SetFloat("diffuseRate", diffuse ? diffuseRate : 0);
+		
 	}
 	
 	/// <summary>
@@ -144,6 +169,7 @@ public class SlimeAlgorithm : MonoBehaviour
 	// Update is called once per frame.
 	void Update()
 	{
+		UpdateSettings();
 		for (int i = 0; i < algorithmStepsPerFrame; i++) 
 		{
 			AlgorithmStep();

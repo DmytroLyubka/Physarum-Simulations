@@ -170,13 +170,16 @@ MonoBehaviour:
   algorithmComputeShader: {fileID: 7200000, guid: 5cd4523539f6f0b47ae537461922756a, type: 3}
   width: 1280
   height: 720
-  agentCount: 10000
-  moveSpeed: 10
+  agentCount: 100
+  moveSpeed: 20
   algorithmStepsPerFrame: 1
-  decaySpeed: 0.1
   agentRotationAngle: 0.7853982
   sensorOffset: 90
   sensorAngle: 0.7853982
+  decay: 1
+  diffuse: 1
+  decayRate: 0.1
+  diffuseRate: 1
 --- !u!1 &1079781145
 GameObject:
   m_ObjectHideFlags: 0
