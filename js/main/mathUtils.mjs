@@ -28,8 +28,6 @@ export const simpleMeanConvolute = (matrix) => {
     const matrixWidth = matrix[0].length
 
     const weights = [[1 / 9, 1 / 9, 1 / 9], [1 / 9, 1 / 9, 1 / 9], [1 / 9, 1 / 9, 1 / 9]]
-    let side = 3
-    let halfSide = 1
 
     let output = Array.from({ length: matrixHeight }, () => Array(matrixWidth).fill(0))
 
