@@ -84,6 +84,11 @@ public class SlimeAlgorithm : MonoBehaviour
 	/// Kernel dimensions will always be odd.
 	/// </summary>
 	public int kernelHalfWidth;
+	
+	/// <summary>
+	/// Chemoattractant value agents drop.
+	/// </summary>
+	public int trailDeposit;
 
 	/// <summary>
 	/// Initializes algorithm and compute shader parameters.
@@ -141,17 +146,16 @@ public class SlimeAlgorithm : MonoBehaviour
 	private void UpdateSettings()
 	{
 		algorithmComputeShader.SetFloat("deltaTime", Time.fixedDeltaTime);
+		algorithmComputeShader.SetFloat("time", Time.fixedTime);
 		algorithmComputeShader.SetInt("agentCount", agentCount);
 		algorithmComputeShader.SetFloat("moveSpeed", moveSpeed);
 		algorithmComputeShader.SetFloat("agentRotationAngle", agentRotationAngle);
 		algorithmComputeShader.SetFloat("sensorOffset", sensorOffset);
-		algorithmComputeShader.SetFloat("sensorAngle", sensorOffset);
-		algorithmComputeShader.SetBool("decay", decay);
-		algorithmComputeShader.SetBool("diffuse", diffuse);
+		algorithmComputeShader.SetFloat("sensorAngle", sensorAngle);
 		algorithmComputeShader.SetFloat("decayRate", decay ? decayRate : 0);
 		algorithmComputeShader.SetFloat("diffuseRate", diffuse ? diffuseRate : 0);
 		algorithmComputeShader.SetInt("kernelHalfWidth", kernelHalfWidth);
-		
+		algorithmComputeShader.SetInt("trailDeposit", trailDeposit);
 	}
 	
 	/// <summary>
@@ -176,11 +180,11 @@ public class SlimeAlgorithm : MonoBehaviour
 	}
 
 	// Update is called once per frame.
-	void Update()
+	void FixedUpdate()
 	{
-		UpdateSettings();
 		for (int i = 0; i < algorithmStepsPerFrame; i++) 
 		{
+			UpdateSettings();
 			AlgorithmStep();
 		}
 	}

@@ -16,20 +16,26 @@ float moveSpeed; // agent move speed
 float agentRotationAngle; // angle at which agents rotate
 float sensorOffset; // sensor distance from agent
 float sensorAngle; // sensor angle relative to agent
+float time; // total time passed since start of simulation
+int trailDeposit; // trail value agents deposit
 
-// Hash function without Sine: https://www.shadertoy.com/view/4djSRW
-// Provides a pseudorandom method to generate numbers.
-float hash(float3 p)
+// Hash function www.cs.ubc.ca/~rbridson/docs/schechter-sca08-turbulence.pdf
+// Taken from SebLague
+uint hash(uint state)
 {
-    p = frac(p * 0.1031);
-    p += dot(p, p.zyx + 31.32);
-    return frac((p.x + p.y) * p.z);
+    state ^= 2747636419u;
+    state *= 2654435769u;
+    state ^= state >> 16;
+    state *= 2654435769u;
+    state ^= state >> 16;
+    state *= 2654435769u;
+    return state;
 }
 
-// Evaluates N mod M, supports negative N (native % operator does not)
-float mod(float n, float m)
+// Scales hash function output to be in the range 0-1
+float scaleToRange01(uint state)
 {
-    return ((n % m) + m) % m;
+    return state / 4294967295.0;
 }
 
 // Checks trail map value detected by a sensor with angle sensorDeltaAngle
@@ -40,8 +46,8 @@ float checkSensor(Agent agent, float sensorDeltaAngle)
     float2 sensorDirection = float2(cos(globalSensorAngle), sin(globalSensorAngle));
     float2 sensorPosition = agent.position + sensorDirection * sensorOffset;
 
-    int sensorCoordX = (int) round(mod(sensorPosition.x, width));
-    int sensorCoordY = (int) round(mod(sensorPosition.y, height));
+    int sensorCoordX = clamp(sensorPosition.x, 0, width-1);
+    int sensorCoordY = clamp(sensorPosition.y, 0, height-1);
 
     // Return equally weighted sum of 4 channels. Maybe it makes more sense to
     // Take the sum of the first 3 (RGB) and multiply it by the alpha value?
@@ -53,74 +59,92 @@ float checkSensor(Agent agent, float sensorDeltaAngle)
 [numthreads(16,1,1)]
 void AlgorithmStep (uint3 id : SV_DispatchThreadID)
 {
-    if (id.x >= agentCount) {
-        return;
-    }
+	if (id.x >= agentCount) {
+		return;
+	}
 
-    Agent agent = agents[id.x];
-    float2 direction = float2(cos(agent.angle), sin(agent.angle));
-    float2 newPosition = agent.position + direction * moveSpeed * deltaTime;
+	Agent agent = agents[id.x];
+	float2 pos = agent.position;
 
-    // Move agent
-    newPosition.x = mod(newPosition.x, width);
-    newPosition.y = mod(newPosition.y, height);
+	uint random = hash(pos.y * width + pos.x + hash(id.x + time * 100000));
+	float randomSteerStrength = scaleToRange01(random);
 
     // Check sensor trail values
+	float sensorAngleRad = sensorAngle * (3.1415 / 180); // convert input angle to radians
     float frontTrailValue = checkSensor(agent, 0);
-    float leftTrailValue = checkSensor(agent, sensorAngle);
-    float rightTrailValue = checkSensor(agent, -sensorAngle);
+    float leftTrailValue = checkSensor(agent, sensorAngleRad);
+    float rightTrailValue = checkSensor(agent, -sensorAngleRad);
+	float turnSpeed = agentRotationAngle;
 
-    if (frontTrailValue > leftTrailValue && frontTrailValue > rightTrailValue)
-    {
-        // pass
-    }
-    /* Note: It doesn't really make sense to have this step be random? The fact that
-    * the front sensor is detecting a weaker chemoattractant than the two off-centre
-    * sensors does not imply that the left and right sensors have equal "weight",
-    * it is very much possible that the left sensor has detected a higher trail value
-    * while at the same time the front sensor has detected the lowest trail value (in
-    * which case the agent should rotate left).
-    * 
-    * TODO: Make this step more deterministic, only have random rotation if left and right
-    * sensors have the same trail value, both of which must be higher than the front sensor's.
-    */
-    else if (frontTrailValue > leftTrailValue && frontTrailValue > rightTrailValue)
-    {
-        float randomValue = hash(float3(agent.position.x, agent.position.y, direction.x + direction.y));
-        if (randomValue > 0.5)
+	// Continue in same direction
+	if (frontTrailValue > leftTrailValue && frontTrailValue > rightTrailValue) {
+		// pass
+	}
+    /* Note: It doesn't really make sense to have the choice between left and right
+     * rotation be random here? The fact that the front sensor is detecting a weaker
+     * chemoattractant than the two off-centre sensors does not imply that the left
+     * and right sensors have equal chemoattractant concentration, it is very much
+     * possible that the left sensor has detected a higher trail value while at the
+     * same time the front sensor has detected the lowest trail value (in which case
+     * the agent should rotate left).
+     * 
+     * TODO: Make this step more deterministic, only have rotation choice be random if
+     * left and right sensors have the same trail value, both of which must be higher
+     * than the front sensor's.
+     */
+	else if (frontTrailValue < leftTrailValue && frontTrailValue < rightTrailValue) {
+		if (randomSteerStrength > 0.5)
         {
-            agents[id.x].angle += agentRotationAngle;
+            agents[id.x].angle += randomSteerStrength * turnSpeed * deltaTime;
         }
         else
         {
-            agents[id.x].angle -= agentRotationAngle;
+            agents[id.x].angle -= randomSteerStrength * turnSpeed * deltaTime;
         }
-    }
-    else if (rightTrailValue < leftTrailValue)
-    {
-        agents[id.x].angle += agentRotationAngle;
-    }
-    else if (leftTrailValue > rightTrailValue)
-    {
-        agents[id.x].angle -= agentRotationAngle;
-    }
+	}
+
+	// Turn right
+	else if (rightTrailValue > leftTrailValue) {
+		agents[id.x].angle -= randomSteerStrength * turnSpeed * deltaTime;
+	}
+	// Turn left
+	else if (leftTrailValue > rightTrailValue) {
+		agents[id.x].angle += randomSteerStrength * turnSpeed * deltaTime;
+	}
     else
     {
-        // all sensor trail values are equal
+        /* All sensor trail values are equal - maybe have random choice of rotation direction
+         * here?
+         */
         // pass
     }
 
-    // Set new position and update trail map
-    agents[id.x].position = newPosition;
-    trailMap[int2(newPosition.x, newPosition.y)] = float4(1, 1, 1, 1);
+	// Update position
+	float2 direction = float2(cos(agent.angle), sin(agent.angle));
+	float2 newPosition = agent.position + direction * deltaTime * moveSpeed;
+
+	// Agent has hit boundary, choose random agent angle and don't deposit trail
+	if (newPosition.x < 0 || newPosition.x >= width || newPosition.y < 0 || newPosition.y >= height) {
+		random = hash(random);
+		float randomAngle = scaleToRange01(random) * 2 * 3.1415;
+
+        newPosition.x = clamp(newPosition.x, 0, width-1);
+        newPosition.y = clamp(newPosition.y, 0, height-1);
+
+		agents[id.x].angle = randomAngle;
+	}
+    // No boundaries hit, deposit trail
+	else {
+        trailMap[int2(newPosition)] += trailDeposit * deltaTime;
+	}
+
+	agents[id.x].position = newPosition;
 }
 
 
 #pragma kernel ProcessTrailMap
 
 RWTexture2D<float4> processedTrailMap;
-bool decay;
-bool diffuse;
 float decayRate;
 float diffuseRate;
 int kernelHalfWidth;
@@ -139,15 +163,16 @@ void ProcessTrailMap (uint3 id : SV_DispatchThreadID)
     {
         for (int y = -kernelHalfWidth; y <= kernelHalfWidth; y++)
         {
-            int kernelX = mod(id.x + x, width);
-            int kernelY = mod(id.y + y, height);
+            int kernelX = clamp(id.x + x, 0, width-1);
+            int kernelY = clamp(id.y + y, 0, height-1);
             sum += trailMap[int2(kernelX, kernelY)];
         }
     }
-    float4 diffusedTrail = sum / ((1 + 2*kernelHalfWidth)*(1 + 2*kernelHalfWidth));
+    
+    float4 diffusedTrail = sum / ((1 + 2 * kernelHalfWidth)*(1 + 2 * kernelHalfWidth));
+    
     float fixedDiffuseRate = diffuseRate * deltaTime;
-    //float4 weightedDiffusedTrail = (1 - fixedDiffuseRate) * trailMap[id.xy] + fixedDiffuseRate * diffusedTrail;
-    float4 weightedDiffusedTrail = diffusedTrail;
+    float4 weightedDiffusedTrail = (1 - fixedDiffuseRate) * trailMap[id.xy] + fixedDiffuseRate * diffusedTrail;
     
     processedTrailMap[id.xy] = max(0, weightedDiffusedTrail - decayRate * deltaTime);
 }
