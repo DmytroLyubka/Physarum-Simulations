@@ -20,7 +20,7 @@ float time; // total time passed since start of simulation
 int trailDeposit; // trail value agents deposit
 
 // Hash function www.cs.ubc.ca/~rbridson/docs/schechter-sca08-turbulence.pdf
-// Taken from SebLague
+// Credits: SebLague
 uint hash(uint state)
 {
     state ^= 2747636419u;
@@ -33,6 +33,7 @@ uint hash(uint state)
 }
 
 // Scales hash function output to be in the range 0-1
+// Credits: SebLague
 float scaleToRange01(uint state)
 {
     return state / 4294967295.0;
@@ -172,6 +173,8 @@ void ProcessTrailMap (uint3 id : SV_DispatchThreadID)
     float4 diffusedTrail = sum / ((1 + 2 * kernelHalfWidth)*(1 + 2 * kernelHalfWidth));
     
     float fixedDiffuseRate = diffuseRate * deltaTime;
+
+    // Weighted average between original and diffused trail values
     float4 weightedDiffusedTrail = (1 - fixedDiffuseRate) * trailMap[id.xy] + fixedDiffuseRate * diffusedTrail;
     
     processedTrailMap[id.xy] = max(0, weightedDiffusedTrail - decayRate * deltaTime);

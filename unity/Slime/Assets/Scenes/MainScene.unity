@@ -170,12 +170,13 @@ MonoBehaviour:
   algorithmComputeShader: {fileID: 7200000, guid: 5cd4523539f6f0b47ae537461922756a, type: 3}
   width: 1280
   height: 720
+  bufferMaxAgentCount: 0
   agentCount: 25000
   moveSpeed: 70
   algorithmStepsPerFrame: 2
   agentRotationAngle: 45
   sensorOffset: 40
-  sensorAngle: 100
+  sensorAngle: 45
   decay: 1
   diffuse: 1
   decayRate: 0.5
