@@ -97,6 +97,11 @@ public class SlimeAlgorithm : MonoBehaviour
 	/// Chemoattractant value agents drop.
 	/// </summary>
 	[Min(0)] public int trailDeposit;
+	
+	/// <summary>
+	/// Enable agent collision.
+	/// </summary>
+	public bool agentCollision;
 
 	/// <summary>
 	/// Initializes algorithm and compute shader parameters.
@@ -166,6 +171,7 @@ public class SlimeAlgorithm : MonoBehaviour
 		algorithmComputeShader.SetFloat("diffuseRate", diffuse ? diffuseRate : 0);
 		algorithmComputeShader.SetInt("kernelHalfWidth", kernelHalfWidth);
 		algorithmComputeShader.SetInt("trailDeposit", trailDeposit);
+		algorithmComputeShader.SetBool("agentCollision", agentCollision);
 	}
 	
 	/// <summary>

@@ -18,6 +18,7 @@ float sensorOffset; // sensor distance from agent
 float sensorAngle; // sensor angle relative to agent
 float time; // total time passed since start of simulation
 int trailDeposit; // trail value agents deposit
+bool agentCollision; // agent collision toggle
 
 // Hash function www.cs.ubc.ca/~rbridson/docs/schechter-sca08-turbulence.pdf
 // Credits: SebLague
@@ -124,8 +125,22 @@ void AlgorithmStep (uint3 id : SV_DispatchThreadID)
 	float2 direction = float2(cos(agent.angle), sin(agent.angle));
 	float2 newPosition = agent.position + direction * deltaTime * moveSpeed;
 
-	// Agent has hit boundary, choose random agent angle and don't deposit trail
-	if (newPosition.x < 0 || newPosition.x >= width || newPosition.y < 0 || newPosition.y >= height) {
+    bool newPositionOccupied = false;
+    // Check if new position is already occupied by an agent
+    if (agentCollision)
+    {
+        for (uint i = 0; i < agentCount; i++)
+        {
+            if (all(agents[i].position == newPosition))
+            {
+                newPositionOccupied = true;
+            }
+        }
+    }
+
+	// Agent has hit boundary or target position is occupied, choose random agent angle and don't deposit trail
+	if ((newPosition.x < 0 || newPosition.x >= width || newPosition.y < 0 || newPosition.y >= height)
+            || newPositionOccupied) {
 		random = hash(random);
 		float randomAngle = scaleToRange01(random) * 2 * 3.1415;
 
