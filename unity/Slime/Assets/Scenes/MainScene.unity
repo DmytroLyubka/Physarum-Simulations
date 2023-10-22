@@ -171,7 +171,7 @@ MonoBehaviour:
   width: 1280
   height: 720
   bufferMaxAgentCount: 0
-  agentCount: 6000
+  agentCount: 25000
   moveSpeed: 70
   algorithmStepsPerFrame: 2
   agentRotationAngle: 45
@@ -183,6 +183,7 @@ MonoBehaviour:
   diffuseRate: 3
   kernelHalfWidth: 1
   trailDeposit: 300
+  agentCollision: 0
 --- !u!1 &1079781145
 GameObject:
   m_ObjectHideFlags: 0

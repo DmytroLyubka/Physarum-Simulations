@@ -84,17 +84,17 @@ void AlgorithmStep (uint3 id : SV_DispatchThreadID)
         // pass
     }
     /* Note: It doesn't really make sense to have the choice between left and right
-        * rotation be random here? The fact that the front sensor is detecting a weaker
-        * chemoattractant than the two off-centre sensors does not imply that the left
-        * and right sensors have equal chemoattractant concentration, it is very much
-        * possible that the left sensor has detected a higher trail value while at the
-        * same time the front sensor has detected the lowest trail value (in which case
-        * the agent should rotate left).
-        * 
-        * TODO: Make this step more deterministic, only have rotation choice be random if
-        * left and right sensors have the same trail value, both of which must be higher
-        * than that of the front sensor.
-        */
+     * rotation be random here? The fact that the front sensor is detecting a weaker
+     * chemoattractant than the two off-centre sensors does not imply that the left
+     * and right sensors have equal chemoattractant concentration, it is very much
+     * possible that the left sensor has detected a higher trail value while at the
+     * same time the front sensor has detected the lowest trail value (in which case
+     * the agent should rotate left).
+     * 
+     * TODO: Make this step more deterministic, only have rotation choice be random if
+     * left and right sensors have the same trail value, both of which must be higher
+     * than that of the front sensor.
+     */
     else if (frontTrailValue < leftTrailValue && frontTrailValue < rightTrailValue)
     {
         if (randomSteerStrength > 0.5)

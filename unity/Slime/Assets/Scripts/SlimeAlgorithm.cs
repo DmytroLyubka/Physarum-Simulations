@@ -3,101 +3,101 @@ using UnityEngine;
 public class SlimeAlgorithm : MonoBehaviour
 {
 	public ComputeShader algorithmComputeShader;
-	
+
 	/// <summary>
 	/// Stores raw agent positions over time.
 	/// </summary>
 	private RenderTexture trailMap;
-	
+
 	/// <summary>
 	/// Stores processed (decayed, diffused, etc.) trail map values over time.
 	/// </summary>
 	private RenderTexture processedTrailMap;
-	
+
 	/// <summary>
 	/// Holds agent objects to be used by compute shaders.
 	/// </summary>
 	public ComputeBuffer agentBuffer;
-	
+
 	/// <summary>
 	/// Texture width.
 	/// </summary>
 	[Range(1, 2000)] public int width;
-	
+
 	/// <summary>
 	/// Texture height.
 	/// </summary>
 	[Range(1, 2000)] public int height;
-	
+
 	/// <summary>
 	/// Store maximum number of agents that can be processed in a single thread group dimension (65535).
 	/// </summary>
 	public bool bufferMaxAgentCount;
-	
+
 	/// <summary>
 	/// Number of agents to simulate.
 	/// </summary>
 	[Range(1, 65535)] public int agentCount;
-	
+
 	/// <summary>
 	/// How many pixels agents move at each algorithm step.
 	/// </summary>
 	[Range(0, 200)] public int moveSpeed;
-	
+
 	/// <summary>
 	/// Number of algorithm steps to run at each frame.
 	/// </summary>
 	[Min(0)] public int algorithmStepsPerFrame;
-	
+
 	/// <summary>
 	/// Angle at which agents rotate.
 	/// </summary>
 	[Range(0, 360)] public float agentRotationAngle;
-	
+
 	/// <summary>
 	/// Distance between sensors and their agents.
 	/// </summary>
 	[Min(0)] public float sensorOffset;
-	
+
 	/// <summary>
 	/// Angle of sensors relative to their agents.
 	/// </summary>
 	[Range(0, 360)] public float sensorAngle;
-	
+
 	/// <summary>
 	/// Toggle trail map decay.
 	/// </summary>
 	public bool decay;
-	
+
 	/// <summary>
 	/// Toggle trail map diffusion.
 	/// </summary>
 	public bool diffuse;
-	
+
 	/// <summary>
 	/// Rate at which to decay trail map.
 	/// Actual decay per algorithm step = decayRate * fixedDeltaTime (usually 0.02)
 	/// </summary>
 	[Min(0)] public float decayRate;
-	
+
 	/// <summary>
 	/// Rate at which to diffuse trail map.
 	/// Actual diffusion rate per algorithm step = diffuseRate * fixedDeltaTime (usually 0.02)
 	/// E.g. final diffuse rate 50% -> equally weighted average between original and diffused trail values.
 	/// </summary>
 	[Min(0)] public float diffuseRate;
-	
+
 	/// <summary>
 	/// Width of kernel used for trail map diffusion = 1 + 2 * kernelHalfWidth.
 	/// Kernel dimensions will always be odd.
 	/// </summary>
 	[Min(0)] public int kernelHalfWidth;
-	
+
 	/// <summary>
 	/// Chemoattractant value agents drop.
 	/// </summary>
 	[Min(0)] public int trailDeposit;
-	
+
 	/// <summary>
 	/// Enable agent collision.
 	/// </summary>
@@ -152,7 +152,7 @@ public class SlimeAlgorithm : MonoBehaviour
 		algorithmComputeShader.SetInt("height", height);
 		UpdateSettings();
 	}
-	
+
 	/// <summary>
 	/// Updates settings in compute shader to match editor values.
 	/// </summary>
@@ -173,7 +173,7 @@ public class SlimeAlgorithm : MonoBehaviour
 		algorithmComputeShader.SetInt("trailDeposit", trailDeposit);
 		algorithmComputeShader.SetBool("agentCollision", agentCollision);
 	}
-	
+
 	/// <summary>
 	/// Executes algorithm step.
 	/// </summary>
@@ -204,7 +204,7 @@ public class SlimeAlgorithm : MonoBehaviour
 			AlgorithmStep();
 		}
 	}
-	
+
 	void OnDestroy() 
 	{
 		// Release agent buffer when scene ends (just in case)
@@ -228,7 +228,7 @@ public class SlimeAlgorithm : MonoBehaviour
 		
 		shader.Dispatch(kernelIndex, numGroupsX, numGroupsY, numGroupsZ);
 	}
-	
+
 	/// <summary>
 	/// Agent structure.
 	/// </summary>
