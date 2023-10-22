@@ -56,7 +56,6 @@ float checkSensor(Agent agent, float sensorDeltaAngle)
     return dot(trailMap[int2(sensorCoordX, sensorCoordY)], int4(1, 1, 1, 1));
 }
 
-
 // Executes algorithm step.
 [numthreads(16,1,1)]
 void AlgorithmStep (uint3 id : SV_DispatchThreadID)
@@ -92,7 +91,7 @@ void AlgorithmStep (uint3 id : SV_DispatchThreadID)
      * 
      * TODO: Make this step more deterministic, only have rotation choice be random if
      * left and right sensors have the same trail value, both of which must be higher
-     * than the front sensor's.
+     * than that of the front sensor.
      */
 	else if (frontTrailValue < leftTrailValue && frontTrailValue < rightTrailValue) {
 		if (randomSteerStrength > 0.5)
