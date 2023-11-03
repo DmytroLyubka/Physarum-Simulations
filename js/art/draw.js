@@ -8,12 +8,12 @@ function setup() {
 }
 
 const iterMax = 11
-const angle = 15
 
 function branch(length) {
     line(0, 0, 0, -length)
     translate(0, -length)
     length *= 0.65
+    const angle = random(0, 360)
 
     if (length > 2)
     {
