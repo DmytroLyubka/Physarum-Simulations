@@ -1,7 +1,7 @@
 function setup() {
     let canvasSize = 850
     createCanvas(canvasSize, canvasSize)
-    background(0, 0, 40)
+    background(0)
     stroke(255, 255, 255)
     noLoop()
     angleMode(DEGREES)
@@ -10,31 +10,28 @@ function setup() {
 const iterMax = 11
 const angle = 15
 
-function branch(iters) {
-    line(0, 0, 0, -50)
-    translate(0, -50)
-    iters++
+function branch(length) {
+    line(0, 0, 0, -length)
+    translate(0, -length)
+    length *= 0.65
 
-    if (iters < iterMax)
+    if (length > 2)
     {
-
         push()
         rotate(angle)
-        branch(iters)
+        branch(length)
         pop()
 
         push()
         rotate(-angle)
-        branch(iters)
+        branch(length)
         pop()
     }
 }
 
 function draw() {
-    let iters = 0
+    let length = 100
 
-    translate(width/2, height/1.2)
-    push()
-    branch(iters)
-    pop()
+    translate(width/2, height/1.2) // move fractal to centre of screen
+    branch(length)
 }
