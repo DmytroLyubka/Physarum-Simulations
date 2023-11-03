@@ -1,3 +1,6 @@
+const initialLength = 100
+const initialAngle = 45
+
 function setup() {
     let canvasSize = 850
     createCanvas(canvasSize, canvasSize)
@@ -9,29 +12,27 @@ function setup() {
 
 const iterMax = 11
 
-function branch(length) {
+function branch(length, angle) {
     line(0, 0, 0, -length)
     translate(0, -length)
     length *= 0.65
-    const angle = random(0, 360)
+    angle = random(angle - 15, angle + 15)
 
     if (length > 2)
     {
         push()
         rotate(angle)
-        branch(length)
+        branch(length, angle)
         pop()
 
         push()
         rotate(-angle)
-        branch(length)
+        branch(length, angle)
         pop()
     }
 }
 
 function draw() {
-    let length = 100
-
     translate(width/2, height/1.2) // move fractal to centre of screen
-    branch(length)
+    branch(initialLength, initialAngle)
 }
