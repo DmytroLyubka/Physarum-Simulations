@@ -142,7 +142,6 @@ const moveAgent = (agent, amount) => {
     const future_x = mod(agent.x + amount[0], canvasWidth)
     const future_y = mod(agent.y + amount[1], canvasHeight)
 
-
     // Suggested agent's location is already filled.
     if (agentCollision && physicalMap[parseInt(future_x)][parseInt(future_y)] != 0) {
         agent.angle = getRandom(0, 2 * Math.PI)
