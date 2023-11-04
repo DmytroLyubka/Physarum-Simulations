@@ -12,7 +12,7 @@ let iterationCount = 1
 
 function setup() {
     createCanvas(canvasSize, canvasSize)
-    background(0)
+    background(255)
     angleMode(DEGREES)
 
     generateParticles()
@@ -42,7 +42,7 @@ function draw() {
         {
             continue
         }
-        fill(255, 255, 255, 5)
+        fill(0, 0, 0, 10)
         rect(particle.x, particle.y, particle.thickness)
 
         particle.angle = 360 * noise(particle.x * 0.01, particle.y * 0.01)
