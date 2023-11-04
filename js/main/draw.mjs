@@ -1,25 +1,25 @@
 import * as algorithm from './algorithm.mjs'
 
 // Canvas dimensions
-const canvasWidth = 400
-const canvasHeight = 400
-const agentCollision = false
+const canvasWidth = 200
+const canvasHeight = 200
+const agentCollision = true
 const trailMapDecay = 0.1
 
 // Update variables in algorithm
 algorithm.changeDimensions(canvasWidth, canvasHeight)
-algorithm.changeAgentAcount(2000)
+algorithm.changeAgentAcount(3000)
 algorithm.setAgentCollision(agentCollision)
 algorithm.setTrailMapDecay(trailMapDecay)
 
 const particleSize = 1 // visual size of each agent's particle
 const agentTails = true
-const visualizationType = 'agents' // 'agents' or 'trailMap'
+const visualizationType = 'trailMap' // 'agents' or 'trailMap'
 const agentVisualizationSampleRate = 1 // sample trail map for visualization every X frames
 const trailMapVisualizationSampleRate = 50 // sample trail map for visualization every Y frames
 const useGPU = false
 
-let agentShader, colorShader // fragment shaders
+let agentShader // fragment shaders
 let myFont // need to preload font in WEBGL mode
 let bufferImage // used to create texture for embedding object locations, later sent to fragment shader for rendering
 
@@ -179,8 +179,9 @@ const drawTrailMap = () => {
 
     let maxConcentration = 0
     for (const row of algorithm.trailMap) {
-        maxConcentration = Math.max(maxConcentration, Math.max(row))
+        maxConcentration = Math.max(maxConcentration, Math.max(...row))
     }
+
 
     for (let i = 0; i < algorithm.trailMap.length; i++) {
         for (let j = 0; j < algorithm.trailMap[i].length; j++) {
