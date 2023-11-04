@@ -1,12 +1,12 @@
 const initialLength = 100
-const initialAngle = 65
+const initialAngle = 45
 const initialBranchCount = 4
 
 function setup() {
     let canvasSize = 850
     createCanvas(canvasSize, canvasSize)
     background(0)
-    stroke(255, 255, 255)
+    stroke(255)
     noLoop()
     angleMode(DEGREES)
 }
