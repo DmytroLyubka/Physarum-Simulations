@@ -94,7 +94,6 @@ const deposit = (position, value) => {
  * @param {any} amount
  */
 const moveAgent = (agent, newPosition) => {
-    // TODO: Agent collision
     agent.x = newPosition.x
     agent.y = newPosition.y
 }
@@ -177,12 +176,20 @@ export const simulationStep = () => {
         }
 
         const newPosition = {
-            x: agent.x + Math.cos(agent.angle) * agent.stepSize,
-            y: agent.y + Math.sin(agent.angle) * agent.stepSize
+            x: +(agent.x + Math.cos(agent.angle) * agent.stepSize).toFixed(2),
+            y: +(agent.y + Math.sin(agent.angle) * agent.stepSize).toFixed(2)
+        }
+
+        let newPositionOccupied = false
+        for (const altAgent of agents) {
+            if (altAgent.x == newPosition.x && altAgent.y == newPosition.y) {
+                newPositionOccupied = true
+            }
         }
 
         // Agent has hit boundary, choose random agent angle and don't deposit trail
-        if (newPosition.x < 0 || newPosition.x >= canvasWidth || newPosition.y < 0 || newPosition.y >= canvasHeight)
+        if ((newPosition.x < 0 || newPosition.x >= canvasWidth || newPosition.y < 0 || newPosition.y >= canvasHeight)
+            || newPositionOccupied)
         {
             newPosition.x = clamp(newPosition.x, 0, canvasWidth)
             newPosition.y = clamp(newPosition.y, 0, canvasHeight)
