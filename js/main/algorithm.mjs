@@ -1,9 +1,9 @@
-import { mod, simpleMeanConvolute, getRandom } from './mathUtils.mjs'
+import { mod, clamp, simpleMeanConvolute, getRandom } from './mathUtils.mjs'
 
 // Canvas dimensions.
 export let canvasWidth, canvasHeight
 
-export let trailMap, physicalMap
+export let trailMap
 let trailMapDecay 
 
 export let agents = []
@@ -48,9 +48,6 @@ export const init = () => {
     // Collects trail deposits. Initialized as a zero NxM multidimensional array.
     trailMap = Array.from({ length: canvasHeight }, () => Array(canvasWidth).fill(0))
 
-    // Tracks which pixels are taken up by a physical object. Initialized as a zero NxM multidimensional array.
-    physicalMap = Array.from({ length: canvasHeight }, () => Array(canvasWidth).fill(0))
-
     for (let i = 0; i < agentCount; i++) {
         const newAgent = {
             x: getRandom(0, canvasWidth),
@@ -59,7 +56,7 @@ export const init = () => {
             rotationAngle: Math.PI / 4, // angle by which agents should rotate
             stepSize: 1, // how far agent moves per step
             sensorOffset: 18, // sensor offset distance
-            sensorAngle: Math.PI / 4, // sensor angle from forward position
+            sensorAngle: Math.PI / 4, // sensor angle relative to central axis
             sensors: {
                 front: {
                     x: 0,
@@ -74,39 +71,10 @@ export const init = () => {
                     y: 0
                 }
             },
-            depositValue: 5 // chemoattractant deposition per step
+            depositValue: 5 // trail deposition per step
         }
         agents.push(newAgent)
     }
-}
-
-/**
- * Diffuse trail around agent.
- * @param {any} agent
- * @param {any} trailMap
- */
-const diffuse = (agent, trailMap) => {
-     /* Centre cell is diffused using a 3x3 kernel. The remaining 8 cells are
-      * diffused using an average between themselves and the centre cell
-      */
-     
-    let x = parseInt(agent.x)
-    let y = parseInt(agent.y)
-
-    // y+1 row
-    trailMap[mod(x - 1, canvasWidth)][mod(y + 1, canvasHeight)] = (trailMap[mod(x - 1, canvasWidth)][mod(y + 1, canvasHeight)] + trailMap[x][y]) / 2
-    trailMap[x][mod(y + 1, canvasHeight)] = (trailMap[x][mod(y + 1, canvasHeight)] + trailMap[x][y]) / 2
-    trailMap[mod(x + 1, canvasWidth)][mod(y + 1, canvasHeight)] = (trailMap[mod(x + 1, canvasWidth)][mod(y + 1, canvasHeight)] + trailMap[x][y]) / 2
-
-    // y row
-    trailMap[mod(x - 1, canvasWidth)][y] = (trailMap[mod(x - 1, canvasWidth)][y] + trailMap[x][y]) / 2
-    trailMap[x][y] = (trailMap[mod(x - 1, canvasWidth)][mod(y + 1, canvasHeight)] + trailMap[x][mod(y + 1, canvasHeight)] + trailMap[mod(x + 1, canvasWidth)][mod(y + 1, canvasHeight)] + trailMap[mod(x - 1, canvasWidth)][y] + trailMap[x][y] + trailMap[mod(x + 1, canvasWidth)][y] + trailMap[mod(x - 1, canvasWidth)][mod(y - 1, canvasHeight)] + trailMap[x][mod(y - 1, canvasHeight)] + trailMap[mod(x + 1, canvasWidth)][mod(y - 1, canvasHeight)]) / 9
-    trailMap[mod(x + 1, canvasWidth)][y] = (trailMap[mod(x + 1, canvasWidth)][y] + trailMap[x][y]) / 2
-
-    // y-1 row
-    trailMap[mod(x - 1, canvasWidth)][mod(y - 1, canvasHeight)] = (trailMap[mod(x - 1, canvasWidth)][mod(y - 1, canvasHeight)] + trailMap[x][y]) / 2
-    trailMap[x][mod(y - 1, canvasHeight)] = (trailMap[x][mod(y - 1, canvasHeight)] + trailMap[x][y]) / 2
-    trailMap[mod(x + 1, canvasWidth)][mod(y - 1, canvasHeight)] = (trailMap[mod(x + 1, canvasWidth)][mod(y - 1, canvasHeight)] + trailMap[x][y]) / 2
 }
 
 /**
@@ -114,23 +82,10 @@ const diffuse = (agent, trailMap) => {
  * @param {any} agent
  * @param {any} trailMap
  */
-const deposit = (agent, trailMap) => {
-    let x = parseInt(agent.x)
-    let y = parseInt(agent.y)
-    trailMap[x][y] += agent.depositValue
-}
-
-/**
- * Takes an object with properties (x,y), adds/removes physical location entry of object in physicalMap depending on the value of type.
- * @param {any} obj
- * @param {any} physicalMap
- * @param {string} type 'add' or 'remove'
- */
-const locationDump = (obj, physicalMap, type) => {
-    const x = parseInt(obj.x)
-    const y = parseInt(obj.y)
-
-    physicalMap[x][y] = type == 'add' ? 1 : 0
+const deposit = (position, value) => {
+    let x = parseInt(position.x)
+    let y = parseInt(position.y)
+    trailMap[x][y] += value
 }
 
 /**
@@ -138,20 +93,10 @@ const locationDump = (obj, physicalMap, type) => {
  * @param {any} agent
  * @param {any} amount
  */
-const moveAgent = (agent, amount) => {
-    const future_x = mod(agent.x + amount[0], canvasWidth)
-    const future_y = mod(agent.y + amount[1], canvasHeight)
-
-    // Suggested agent's location is already filled.
-    if (agentCollision && physicalMap[parseInt(future_x)][parseInt(future_y)] != 0) {
-        agent.angle = getRandom(0, 2 * Math.PI)
-        return
-    }
-
-    locationDump(agent, physicalMap, 'remove')
-    agent.x = future_x
-    agent.y = future_y
-    locationDump(agent, physicalMap, 'add')
+const moveAgent = (agent, newPosition) => {
+    // TODO: Agent collision
+    agent.x = newPosition.x
+    agent.y = newPosition.y
 }
 
 /**
@@ -192,23 +137,15 @@ const updateSensors = (agent) => {
  * @param {any} obj
  */
 const adjustForBoundaries = (obj) => {
-    obj.x = mod(obj.x, canvasWidth)
-    obj.y = mod(obj.y, canvasHeight)
+    // obj.x = mod(obj.x, canvasWidth)
+    // obj.y = mod(obj.y, canvasHeight)
+    obj.x = clamp(obj.x, 0, canvasWidth)
+    obj.y = clamp(obj.y, 0, canvasHeight)
 }
 
 // Perform a step in the simulation algorithm.
 export const simulationStep = () => {
     for (const agent of agents) {
-        // Move agents
-        moveAgent(agent, [agent.stepSize * Math.cos(agent.angle), agent.stepSize * Math.sin(agent.angle)])
-
-        updateSensors(agent)
-        // Check for boundaries, loop back on other side if boundaries exceeded
-        adjustForBoundaries(agent)
-        adjustForBoundaries(agent.sensors.front)
-        adjustForBoundaries(agent.sensors.left)
-        adjustForBoundaries(agent.sensors.right)
-
         let frontTrail = trailMap[agent.sensors.front.x][agent.sensors.front.y]
         let leftTrail = trailMap[agent.sensors.left.x][agent.sensors.left.y]
         let rightTrail = trailMap[agent.sensors.right.x][agent.sensors.right.y]
@@ -217,7 +154,7 @@ export const simulationStep = () => {
             // pass
         }
         /* Note: It doesn't really make sense to have this step be random? The fact that
-         * the front sensor is detecting a weaker chemoattractant than the two off-centre
+         * the front sensor is detecting a weaker trail than the two off-centre
          * sensors does not imply that the left and right sensors have equal "weight",
          * it is very much possible that the left sensor has detected a higher trail value
          * while at the same time the front sensor has detected the lowest trail value (in
@@ -239,9 +176,31 @@ export const simulationStep = () => {
             // pass
         }
 
-        // Diffuse trail map before depositing a new chemoattractant value
-        //diffuse(agent, trailMap)
-        deposit(agent, trailMap)
+        const newPosition = {
+            x: agent.x + Math.cos(agent.angle) * agent.stepSize,
+            y: agent.y + Math.sin(agent.angle) * agent.stepSize
+        }
+
+        // Agent has hit boundary, choose random agent angle and don't deposit trail
+        if (newPosition.x < 0 || newPosition.x >= canvasWidth || newPosition.y < 0 || newPosition.y >= canvasHeight)
+        {
+            newPosition.x = clamp(newPosition.x, 0, canvasWidth)
+            newPosition.y = clamp(newPosition.y, 0, canvasHeight)
+            agent.angle = getRandom(0, 2 * Math.PI)
+        }
+        // No boundaries hit, deposit trail
+        else
+        {
+            // Diffuse trail map before depositing a new trail value
+            deposit(newPosition, agent.depositValue)
+        }
+
+        moveAgent(agent, newPosition)
+
+        updateSensors(agent)
+        adjustForBoundaries(agent.sensors.front)
+        adjustForBoundaries(agent.sensors.left)
+        adjustForBoundaries(agent.sensors.right)
     }
     simpleMeanConvolute(trailMap)
     decay(trailMap)

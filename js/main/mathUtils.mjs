@@ -9,6 +9,17 @@ export const mod = (n, m) => {
 }
 
 /**
+ * Clamps number in a specified range.
+ * @param {number} n 
+ * @param {number} min 
+ * @param {number} max 
+ * @returns 
+ */
+export const clamp = (n, min, max) => {
+    return Math.min(Math.max(n, min), max - 1)
+}
+
+/**
  * Generates random float between min and max.
  * @param {number} min
  * @param {number} max
