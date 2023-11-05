@@ -186,7 +186,7 @@ const drawTrailMap = () => {
     for (let i = 0; i < algorithm.trailMap.length; i++) {
         for (let j = 0; j < algorithm.trailMap[i].length; j++) {
             // Set visual trail particle strength to be relative to the maximum concentration
-            const opacity = algorithm.trailMap[i][j] / maxConcentration * 255
+            const opacity = algorithm.trailMap[i][j] / maxConcentration * 255 * 15
             mainCanvas.fill(255, 255, 255, opacity)
             mainCanvas.rect(i, j, 1)
         }
