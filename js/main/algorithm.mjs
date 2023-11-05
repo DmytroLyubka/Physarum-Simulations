@@ -138,8 +138,8 @@ const updateSensors = (agent) => {
 const adjustForBoundaries = (obj) => {
     // obj.x = mod(obj.x, canvasWidth)
     // obj.y = mod(obj.y, canvasHeight)
-    obj.x = clamp(obj.x, 0, canvasWidth)
-    obj.y = clamp(obj.y, 0, canvasHeight)
+    obj.x = clamp(obj.x, 0, canvasWidth-1)
+    obj.y = clamp(obj.y, 0, canvasHeight-1)
 }
 
 // Perform a step in the simulation algorithm.
@@ -193,8 +193,8 @@ export const simulationStep = () => {
         if ((newPosition.x < 0 || newPosition.x >= canvasWidth || newPosition.y < 0 || newPosition.y >= canvasHeight)
             || newPositionOccupied)
         {
-            newPosition.x = clamp(newPosition.x, 0, canvasWidth)
-            newPosition.y = clamp(newPosition.y, 0, canvasHeight)
+            newPosition.x = clamp(newPosition.x, 0, canvasWidth-1)
+            newPosition.y = clamp(newPosition.y, 0, canvasHeight-1)
             agent.angle = getRandom(0, 2 * Math.PI)
         }
         // No boundaries hit, deposit trail
