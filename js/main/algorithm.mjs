@@ -181,9 +181,11 @@ export const simulationStep = () => {
         }
 
         let newPositionOccupied = false
-        for (const altAgent of agents) {
-            if (altAgent.x == newPosition.x && altAgent.y == newPosition.y) {
-                newPositionOccupied = true
+        if (agentCollision) {
+            for (const altAgent of agents) {
+                if (altAgent.x == newPosition.x && altAgent.y == newPosition.y) {
+                    newPositionOccupied = true
+                }
             }
         }
 
