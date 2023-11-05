@@ -16,7 +16,7 @@ export const mod = (n, m) => {
  * @returns 
  */
 export const clamp = (n, min, max) => {
-    return Math.min(Math.max(n, min), max - 1)
+    return Math.min(Math.max(n, min), max)
 }
 
 /**

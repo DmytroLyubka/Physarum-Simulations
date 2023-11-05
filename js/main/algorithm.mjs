@@ -102,10 +102,10 @@ const moveAgent = (agent, newPosition) => {
  * Decays all trail avalues by a fixed amount.
  * @param {any} trailMap
  */
-const decay = (trailMap) => {
+const decay = (decayRate) => {
     for (let i = 0; i < canvasWidth; i++) {
         for (let j = 0; j < canvasHeight; j++) {
-            trailMap[i][j] = Math.max(0, trailMap[i][j] - trailMapDecay)
+            trailMap[i][j] = Math.max(0, trailMap[i][j] - decayRate)
         }
     }
 }
@@ -212,5 +212,5 @@ export const simulationStep = () => {
         adjustForBoundaries(agent.sensors.right)
     }
     simpleMeanConvolute(trailMap)
-    decay(trailMap)
+    decay(trailMapDecay)
 }
