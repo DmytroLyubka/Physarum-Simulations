@@ -13,7 +13,7 @@ export const mod = (n, m) => {
  * @param {number} n 
  * @param {number} min 
  * @param {number} max 
- * @returns 
+ * @returns {number}
  */
 export const clamp = (n, min, max) => {
     return Math.min(Math.max(n, min), max)
@@ -31,55 +31,36 @@ export const getRandom = (min, max) => {
 
 /**
  * Performs simple mean filtering on a matrix using a 3x3 kernel convolution.
- * @param {any} matrix
+ * @param {*} matrix
  * @returns
  */
 export const simpleMeanConvolute = (matrix) => {
     const matrixHeight = matrix.length
     const matrixWidth = matrix[0].length
 
-    const weights = [[1 / 9, 1 / 9, 1 / 9], [1 / 9, 1 / 9, 1 / 9], [1 / 9, 1 / 9, 1 / 9]]
-
     let output = Array.from({ length: matrixHeight }, () => Array(matrixWidth).fill(0))
 
-    let finalValue
     for (let x = 0; x < matrixWidth; x++) {
         for (let y = 0; y < matrixHeight; y++) {
-            const left_x = mod(x - 1, matrixWidth)
-            const middle_x = mod(x, matrixWidth)
-            const right_x = mod(x + 1, matrixWidth)
+            let sum = 0
+            
+            for (let idx = -1; idx <= 1; idx++) {
+                for (let idy = -1; idy <= 1; idy++) {
+                    const kernelX = x + idx
+                    const kernelY = y + idy
 
-            const top_y = mod(y + 1, matrixHeight)
-            const middle_y = mod(y, matrixHeight)
-            const bottom_y = mod(y - 1, matrixHeight)
+                    if (kernelX < 0 || kernelX >= matrixWidth || kernelY < 0 || kernelY >= matrixHeight) {
+                        continue // outside matrix bounds, treat as a halo region
+                    }
+                    else {
+                        sum += matrix[kernelX][kernelY]
+                    }
 
-            const top_row = [
-                matrix[left_x][top_y],
-                matrix[middle_x][top_y],
-                matrix[right_x][top_y]
-            ]
-
-            const middle_row = [
-                matrix[left_x][middle_y],
-                matrix[middle_x][middle_y],
-                matrix[right_x][middle_y]
-            ]
-
-            const bottom_row = [
-                matrix[left_x][bottom_y],
-                matrix[middle_x][bottom_y],
-                matrix[right_x][bottom_y]
-            ]
-
-            const kernelImage = [top_row, middle_row, bottom_row]
-
-            finalValue = 0;
-            for (let i = 0; i < 3; i++) {
-                for (let j = 0; j < 3; j++) {
-                    finalValue += kernelImage[i][j] * weights[i][j]
                 }
             }
-            output[x][y] = +(finalValue.toFixed(2))
+
+            sum /= 9
+            output[x][y] = sum
         }
     }
     return output

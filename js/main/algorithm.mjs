@@ -89,9 +89,9 @@ const deposit = (position, value) => {
 }
 
 /**
- * Moves agent by a specified amount.
- * @param {any} agent
- * @param {any} amount
+ * Moves agent to specified position
+ * @param {*} agent
+ * @param {*} newPosition
  */
 const moveAgent = (agent, newPosition) => {
     agent.x = newPosition.x
@@ -145,9 +145,9 @@ const adjustForBoundaries = (obj) => {
 // Perform a step in the simulation algorithm.
 export const simulationStep = () => {
     for (const agent of agents) {
-        let frontTrail = trailMap[agent.sensors.front.x][agent.sensors.front.y]
-        let leftTrail = trailMap[agent.sensors.left.x][agent.sensors.left.y]
-        let rightTrail = trailMap[agent.sensors.right.x][agent.sensors.right.y]
+        const frontTrail = trailMap[agent.sensors.front.x][agent.sensors.front.y]
+        const leftTrail = trailMap[agent.sensors.left.x][agent.sensors.left.y]
+        const rightTrail = trailMap[agent.sensors.right.x][agent.sensors.right.y]
 
         if (frontTrail > leftTrail && frontTrail > rightTrail) { // front is strongest
             // pass
@@ -197,10 +197,9 @@ export const simulationStep = () => {
             newPosition.y = clamp(newPosition.y, 0, canvasHeight-1)
             agent.angle = getRandom(0, 2 * Math.PI)
         }
-        // No boundaries hit, deposit trail
+        // No boundary hit, deposit trail
         else
         {
-            // Diffuse trail map before depositing a new trail value
             deposit(newPosition, agent.depositValue)
         }
 
