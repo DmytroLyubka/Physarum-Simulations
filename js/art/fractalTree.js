@@ -42,7 +42,8 @@ function draw() {
     for (let i = 0; i < initialBranchCount; i++)
     {
         push() // save settings before creating initial branch
-        const branchRotation = random(360/initialBranchCount * i - 60, 360/initialBranchCount * i + 60)
+        const angleIdx = 360 / initialBranchCount * i
+        const branchRotation = random(angleIdx - 60, angleIdx + 60)
         rotate(branchRotation)
         branch(initialLength, initialAngle)
         pop() // restore settings after generating initial branch

@@ -1,8 +1,5 @@
 const canvasSize = 850
-const vectorFieldResolution = 1
-const drawVectorField = true
 const particleCount = 5000
-
 let particles = []
 let deadCount = 0
 const particleLifetime = 50
@@ -14,11 +11,12 @@ function setup() {
     createCanvas(canvasSize, canvasSize)
     background(255)
     angleMode(DEGREES)
-
     generateParticles()
-    console.log(`Iteration Count: ${iterationCount}`)
 }
 
+/**
+ * Generates randomly distributed particles on the canvas.
+ */
 function generateParticles()
 {
     for (let i = 0; i < particleCount; i++)
@@ -44,12 +42,11 @@ function draw() {
         }
         fill(0, 0, 0, 10)
         rect(particle.x, particle.y, particle.thickness)
-
-        particle.angle = 360 * noise(particle.x * 0.01, particle.y * 0.01)
-
+        particle.angle = 360 * noise(particle.x * 0.01, particle.y * 0.01) // Perlin-influenced random angle
         particle.x = particle.x + cos(particle.angle)
         particle.y = particle.y + sin(particle.angle)
 
+        // Particle hit boundary, kill particle
         if (particle.x < 0 || particle.x > width || particle.y < 0 || particle.y > height)
         {
             deadCount++
@@ -57,15 +54,14 @@ function draw() {
             continue
         }
     }
+    particleLife++ // tracks particle life length
 
-    particleLife++
-
+    // Re-generate particles if they all died or lived too long
     if ((deadCount == particleCount || particleLife > particleLifetime) && iterationCount < maxIterations)
     {
         particleLife = 0
         deadCount = 0
         iterationCount++
-        console.log(`Iteration Count: ${iterationCount}`)
         generateParticles()
     }
 }

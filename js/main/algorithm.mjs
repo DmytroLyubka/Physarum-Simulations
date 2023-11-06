@@ -1,4 +1,4 @@
-import { mod, clamp, simpleMeanConvolute, getRandom } from './mathUtils.mjs'
+import { clamp, simpleMeanConvolute, getRandom } from './mathUtils.mjs'
 
 // Canvas dimensions.
 export let canvasWidth, canvasHeight
