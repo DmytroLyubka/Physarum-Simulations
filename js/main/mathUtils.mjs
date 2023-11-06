@@ -31,8 +31,8 @@ export const getRandom = (min, max) => {
 
 /**
  * Performs simple mean filtering on a matrix using a 3x3 kernel convolution.
- * @param {*} matrix
- * @returns
+ * @param {number[][]} matrix
+ * @returns {number[][]}
  */
 export const simpleMeanConvolute = (matrix) => {
     const matrixHeight = matrix.length
@@ -42,7 +42,7 @@ export const simpleMeanConvolute = (matrix) => {
 
     for (let x = 0; x < matrixWidth; x++) {
         for (let y = 0; y < matrixHeight; y++) {
-            let sum = 0
+            let diffusedValue = 0
             
             for (let idx = -1; idx <= 1; idx++) {
                 for (let idy = -1; idy <= 1; idy++) {
@@ -53,14 +53,12 @@ export const simpleMeanConvolute = (matrix) => {
                         continue // outside matrix bounds, treat as a halo region
                     }
                     else {
-                        sum += matrix[kernelX][kernelY]
+                        diffusedValue += matrix[kernelX][kernelY]
                     }
-
                 }
             }
-
-            sum /= 9
-            output[x][y] = sum
+            diffusedValue /= 9
+            output[x][y] = diffusedValue
         }
     }
     return output
