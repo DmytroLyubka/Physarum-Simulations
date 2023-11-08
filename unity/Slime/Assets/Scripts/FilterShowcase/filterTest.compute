@@ -1,0 +1,42 @@
+#pragma kernel ProcessTrailMap
+
+RWTexture2D<float4> imageTexture;
+RWTexture2D<float4> filteredTexture;
+
+int width;
+int height;
+float deltaTime;
+float diffuseRate;
+int kernelHalfWidth;
+
+[numthreads(8,8,1)]
+void ProcessTrailMap (uint3 id : SV_DispatchThreadID)
+{
+    if (id.x < 0 || id.x >= (uint)width || id.y < 0 || id.y >= (uint)height)
+    {
+        return;
+    }
+
+    float4 sum = 0;
+    for (int x = -kernelHalfWidth; x <= kernelHalfWidth; x++)
+    {
+        for (int y = -kernelHalfWidth; y <= kernelHalfWidth; y++)
+        {
+            int kernelX = clamp(id.x + x, 0, width-1);
+            int kernelY = clamp(id.y + y, 0, height-1);
+            sum += imageTexture[int2(kernelX, kernelY)];
+        }
+    }
+
+    float4 diffusedTrail = sum / ((1 + 2 * kernelHalfWidth)*(1 + 2 * kernelHalfWidth));
+
+    float fixedDiffuseRate = diffuseRate * deltaTime;
+
+    // Weighted average between original and diffused trail values
+    // float4 weightedDiffusedTrail = (1 - fixedDiffuseRate) * imageTexture[id.xy] + fixedDiffuseRate * diffusedTrail;
+    float4 weightedDiffusedTrail = diffusedTrail;
+    // float4 weightedDiffusedTrail = max(0, imageTexture[id.xy] - 0.01);
+    // float4 weightedDiffusedTrail = imageTexture[id.xy];
+
+    filteredTexture[id.xy] = weightedDiffusedTrail;
+}
