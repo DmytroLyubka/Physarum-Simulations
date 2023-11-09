@@ -1,6 +1,5 @@
 using System.Collections;
 using UnityEngine;
-using UnityEngine.UI;
 
 public class FilterTest : MonoBehaviour
 {
@@ -18,7 +17,8 @@ public class FilterTest : MonoBehaviour
 		filterShader.SetFloat("deltaTime", Time.fixedDeltaTime);
 	}
 
-	IEnumerator load_image()
+    [System.Obsolete]
+    IEnumerator load_image()
 	{
 		string path = System.IO.Path.GetFullPath("Assets/Scripts/FilterShowcase/sign_small.jpg");
 		WWW www = new WWW("file://" + path);
