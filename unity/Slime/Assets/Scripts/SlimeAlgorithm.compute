@@ -20,25 +20,21 @@ float time; // total time passed since start of simulation
 int trailDeposit; // trail value agents deposit
 bool agentCollision; // agent collision toggle
 
-// Hash function www.cs.ubc.ca/~rbridson/docs/schechter-sca08-turbulence.pdf
-// Credits: SebLague
-uint hash(uint state)
+// https://jcgt.org/published/0009/03/02/
+uint hash(uint input)
 {
-    state ^= 2747636419u;
-    state *= 2654435769u;
-    state ^= state >> 16;
-    state *= 2654435769u;
-    state ^= state >> 16;
-    state *= 2654435769u;
-    return state;
+    uint state = input * 747796405u + 2891336453u;
+    uint word = ((state >> ((state >> 28u) + 4u)) ^ state) * 277803737u;
+    word = (word >> 22u) ^ word;
+    return word;
 }
 
-// Scales hash function output to be in the range 0-1
-// Credits: SebLague
-float scaleToRange01(uint state)
+float normalizeRandomNumber(uint input)
 {
-    return state / 4294967295.0;
+    // 4294967295 = maximum value of a 32-bit unsigned int
+    return input / 4294967295.0;
 }
+
 
 // Checks trail map value detected by a sensor with angle sensorDeltaAngle
 // relative to agent.
@@ -69,7 +65,7 @@ void AlgorithmStep (uint3 id : SV_DispatchThreadID)
     float2 pos = agent.position;
 
     uint random = hash(pos.y * width + pos.x + hash(id.x + time * 100000));
-    float randomSteerStrength = scaleToRange01(random);
+    float randomSteerStrength = normalizeRandomNumber(random);
 
     // Check sensor trail values
     float sensorAngleRad = sensorAngle * (3.1415 / 180); // convert input angle to radians
@@ -146,7 +142,7 @@ void AlgorithmStep (uint3 id : SV_DispatchThreadID)
     if ((newPosition.x < 0 || newPosition.x >= width || newPosition.y < 0 || newPosition.y >= height)
             || newPositionOccupied) {
         random = hash(random);
-        float randomAngle = scaleToRange01(random) * 2 * 3.1415;
+        float randomAngle = normalizeRandomNumber(random) * 2 * 3.1415;
 
         newPosition.x = clamp(newPosition.x, 0, width-1);
         newPosition.y = clamp(newPosition.y, 0, height-1);
