@@ -21,7 +21,7 @@ int trailDeposit; // trail value agents deposit
 bool agentCollision; // agent collision toggle
 
 // https://jcgt.org/published/0009/03/02/
-uint hash(uint input)
+uint pcgHash(uint input)
 {
     uint state = input * 747796405u + 2891336453u;
     uint word = ((state >> ((state >> 28u) + 4u)) ^ state) * 277803737u;
@@ -64,7 +64,7 @@ void AlgorithmStep (uint3 id : SV_DispatchThreadID)
     Agent agent = agents[id.x];
     float2 pos = agent.position;
 
-    uint random = hash(pos.y * width + pos.x + hash(id.x + time * 100000));
+    uint random = pcgHash(pos.y * width + pos.x + pcgHash(id.x + time * 100000));
     float randomSteerStrength = normalizeRandomNumber(random);
 
     // Check sensor trail values
@@ -141,7 +141,7 @@ void AlgorithmStep (uint3 id : SV_DispatchThreadID)
     // Agent has hit boundary or target position is occupied, choose random agent angle and don't deposit trail
     if ((newPosition.x < 0 || newPosition.x >= width || newPosition.y < 0 || newPosition.y >= height)
             || newPositionOccupied) {
-        random = hash(random);
+        random = pcgHash(random);
         float randomAngle = normalizeRandomNumber(random) * 2 * 3.1415;
 
         newPosition.x = clamp(newPosition.x, 0, width-1);
