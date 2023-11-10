@@ -76,13 +76,11 @@ public class SlimeAlgorithm : MonoBehaviour
 
 	/// <summary>
 	/// Rate at which to decay trail map.
-	/// Actual decay per algorithm step = decayRate * fixedDeltaTime (usually 0.02)
 	/// </summary>
 	[Min(0)] public float decayRate;
 
 	/// <summary>
 	/// Rate at which to diffuse trail map.
-	/// Actual diffusion rate per algorithm step = diffuseRate * fixedDeltaTime (usually 0.02)
 	/// E.g. final diffuse rate 50% -> equally weighted average between original and diffused trail values.
 	/// </summary>
 	[Min(0)] public float diffuseRate;
@@ -102,6 +100,12 @@ public class SlimeAlgorithm : MonoBehaviour
 	/// Enable agent collision.
 	/// </summary>
 	public bool agentCollision;
+	
+	
+	/// <summary>
+	/// Toggles slightly random steering.
+	/// </summary>
+	public bool randomSteering;
 
 	/// <summary>
 	/// Initializes algorithm and compute shader parameters.
@@ -160,18 +164,18 @@ public class SlimeAlgorithm : MonoBehaviour
 	{
 		algorithmComputeShader.SetInt("width", width);
 		algorithmComputeShader.SetInt("height", height);
-		algorithmComputeShader.SetFloat("deltaTime", Time.fixedDeltaTime);
 		algorithmComputeShader.SetFloat("time", Time.fixedTime);
 		algorithmComputeShader.SetInt("agentCount", agentCount);
 		algorithmComputeShader.SetFloat("moveSpeed", moveSpeed);
-		algorithmComputeShader.SetFloat("agentRotationAngle", agentRotationAngle);
+		algorithmComputeShader.SetFloat("agentRotationAngle", agentRotationAngle* (Mathf.PI / 180));
 		algorithmComputeShader.SetFloat("sensorOffset", sensorOffset);
-		algorithmComputeShader.SetFloat("sensorAngle", sensorAngle);
+		algorithmComputeShader.SetFloat("sensorAngle", sensorAngle * (Mathf.PI / 180));
 		algorithmComputeShader.SetFloat("decayRate", decay ? decayRate : 0);
 		algorithmComputeShader.SetFloat("diffuseRate", diffuse ? diffuseRate : 0);
 		algorithmComputeShader.SetInt("kernelHalfWidth", kernelHalfWidth);
 		algorithmComputeShader.SetInt("trailDeposit", trailDeposit);
 		algorithmComputeShader.SetBool("agentCollision", agentCollision);
+		algorithmComputeShader.SetBool("randomSteering", randomSteering);
 	}
 
 	/// <summary>

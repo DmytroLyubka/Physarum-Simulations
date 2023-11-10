@@ -11,7 +11,6 @@ RWTexture2D<float4> trailMap; // tracks agent positions over time
 uint agentCount; // number of agents in simulation
 int width; // texture width
 int height; // texture height
-float deltaTime; // number of seconds each frame is visible for
 float moveSpeed; // agent move speed
 float agentRotationAngle; // angle at which agents rotate
 float sensorOffset; // sensor distance from agent
@@ -19,17 +18,18 @@ float sensorAngle; // sensor angle relative to agent
 float time; // total time passed since start of simulation
 int trailDeposit; // trail value agents deposit
 bool agentCollision; // agent collision toggle
+bool randomSteering;
 
-// https://www.pcg-random.org/
+// Computes a random 32-bit uint in the range 0 to 4294967295.
 uint pcgHash(uint input)
 {
     uint state = input * 747796405u + 2891336453u;
     uint word = ((state >> ((state >> 28u) + 4u)) ^ state) * 277803737u;
-    word = (word >> 22u) ^ word;
-    return word;
+    return (word >> 22u) ^ word;
 }
 
-float normalizeRandomNumber(uint input)
+// Scales random uint to the range 0 and 1.
+float scale(uint input)
 {
     // 4294967295 = maximum value of a 32-bit unsigned int
     return input / 4294967295.0;
@@ -65,14 +65,12 @@ void AlgorithmStep (uint3 id : SV_DispatchThreadID)
     float2 pos = agent.position;
 
     uint random = pcgHash(pos.y * width + pos.x + pcgHash(id.x + time * 100000));
-    float randomSteerStrength = normalizeRandomNumber(random);
+    float randomSteerStrength = randomSteering ? 1 : scale(random);
 
     // Check sensor trail values
-    float sensorAngleRad = sensorAngle * (3.1415 / 180); // convert input angle to radians
     float frontTrailValue = checkSensor(agent, 0);
-    float leftTrailValue = checkSensor(agent, sensorAngleRad);
-    float rightTrailValue = checkSensor(agent, -sensorAngleRad);
-    float turnSpeed = agentRotationAngle;
+    float leftTrailValue = checkSensor(agent, sensorAngle);
+    float rightTrailValue = checkSensor(agent, -sensorAngle);
 
     // Continue in same direction
     if (frontTrailValue > leftTrailValue && frontTrailValue > rightTrailValue)
@@ -95,23 +93,23 @@ void AlgorithmStep (uint3 id : SV_DispatchThreadID)
     {
         if (randomSteerStrength > 0.5)
         {
-            agents[id.x].angle += randomSteerStrength * turnSpeed * deltaTime;
+            agents[id.x].angle += randomSteerStrength * agentRotationAngle;
         }
         else
         {
-            agents[id.x].angle -= randomSteerStrength * turnSpeed * deltaTime;
+            agents[id.x].angle -= randomSteerStrength * agentRotationAngle;
         }
     }
 
     // Turn right
     else if (rightTrailValue > leftTrailValue)
     {
-        agents[id.x].angle -= randomSteerStrength * turnSpeed * deltaTime;
+        agents[id.x].angle -= randomSteerStrength * agentRotationAngle;
     }
     // Turn left
     else if (leftTrailValue > rightTrailValue) 
     {
-        agents[id.x].angle += randomSteerStrength * turnSpeed * deltaTime;
+        agents[id.x].angle += randomSteerStrength * agentRotationAngle;
     }
     else
     {
@@ -123,7 +121,7 @@ void AlgorithmStep (uint3 id : SV_DispatchThreadID)
 
     // Update position
     float2 direction = float2(cos(agent.angle), sin(agent.angle));
-    float2 newPosition = agent.position + direction * deltaTime * moveSpeed;
+    float2 newPosition = agent.position + direction * moveSpeed;
 
     bool newPositionOccupied = false;
     // Check if new position is already occupied by an agent
@@ -142,7 +140,7 @@ void AlgorithmStep (uint3 id : SV_DispatchThreadID)
     if ((newPosition.x < 0 || newPosition.x >= width || newPosition.y < 0 || newPosition.y >= height)
             || newPositionOccupied) {
         random = pcgHash(random);
-        float randomAngle = normalizeRandomNumber(random) * 2 * 3.1415;
+        float randomAngle = scale(random) * 2 * 3.1415;
 
         newPosition.x = clamp(newPosition.x, 0, width-1);
         newPosition.y = clamp(newPosition.y, 0, height-1);
@@ -152,7 +150,7 @@ void AlgorithmStep (uint3 id : SV_DispatchThreadID)
     // No boundaries hit, deposit trail
     else
     {
-        trailMap[int2(newPosition)] += trailDeposit * deltaTime;
+        trailMap[int2(newPosition)] += trailDeposit;
     }
 
     agents[id.x].position = newPosition;
@@ -188,10 +186,10 @@ void ProcessTrailMap (uint3 id : SV_DispatchThreadID)
 
     float4 diffusedTrail = sum / ((1 + 2 * kernelHalfWidth)*(1 + 2 * kernelHalfWidth));
 
-    float fixedDiffuseRate = diffuseRate * deltaTime;
+    float fixedDiffuseRate = diffuseRate;
 
     // Weighted average between original and diffused trail values
     float4 weightedDiffusedTrail = (1 - fixedDiffuseRate) * trailMap[id.xy] + fixedDiffuseRate * diffusedTrail;
 
-    processedTrailMap[id.xy] = max(0, weightedDiffusedTrail - decayRate * deltaTime);
+    processedTrailMap[id.xy] = max(0, weightedDiffusedTrail - decayRate);
 }

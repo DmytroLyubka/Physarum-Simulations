@@ -171,19 +171,20 @@ MonoBehaviour:
   width: 1280
   height: 720
   bufferMaxAgentCount: 0
-  agentCount: 25000
-  moveSpeed: 70
+  agentCount: 6000
+  moveSpeed: 1
   algorithmStepsPerFrame: 2
   agentRotationAngle: 45
   sensorOffset: 45
   sensorAngle: 45
   decay: 1
   diffuse: 1
-  decayRate: 0.5
-  diffuseRate: 3
+  decayRate: 0.01
+  diffuseRate: 0.01
   kernelHalfWidth: 1
   trailDeposit: 300
   agentCollision: 0
+  randomSteering: 0
 --- !u!1 &1079781145
 GameObject:
   m_ObjectHideFlags: 0
