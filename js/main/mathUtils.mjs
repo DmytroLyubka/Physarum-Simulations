@@ -34,7 +34,7 @@ export const getRandom = (min, max) => {
  * @param {number[][]} matrix
  * @returns {number[][]}
  */
-export const simpleMeanConvolute = (matrix) => {
+export const simpleMeanConvolute = (matrix, diffuseRate) => {
     const matrixHeight = matrix.length
     const matrixWidth = matrix[0].length
 
@@ -58,7 +58,7 @@ export const simpleMeanConvolute = (matrix) => {
                 }
             }
             diffusedValue /= 9
-            output[x][y] = diffusedValue
+            output[x][y] = (1 - diffuseRate) * matrix[x][y] + diffuseRate * diffusedValue
         }
     }
     return output

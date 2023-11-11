@@ -42,7 +42,7 @@ public class SlimeAlgorithm : MonoBehaviour
 	/// <summary>
 	/// How many pixels agents move at each algorithm step.
 	/// </summary>
-	[Range(0, 200)] public int moveSpeed;
+	[Range(0, 200)] public float moveSpeed;
 
 	/// <summary>
 	/// Number of algorithm steps to run at each frame.

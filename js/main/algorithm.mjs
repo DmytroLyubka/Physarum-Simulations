@@ -55,7 +55,7 @@ export const init = () => {
             angle: getRandom(0, 2 * Math.PI), // agent orientation/rotation angle
             rotationAngle: Math.PI / 4, // angle by which agents should rotate
             stepSize: 1, // how far agent moves per step
-            sensorOffset: 18, // sensor offset distance
+            sensorOffset: 9, // sensor offset distance
             sensorAngle: Math.PI / 4, // sensor angle relative to central axis
             sensors: {
                 front: {
@@ -210,6 +210,6 @@ export const simulationStep = () => {
         adjustForBoundaries(agent.sensors.left)
         adjustForBoundaries(agent.sensors.right)
     }
-    simpleMeanConvolute(trailMap)
+    simpleMeanConvolute(trailMap, 1)
     decay(trailMapDecay)
 }
