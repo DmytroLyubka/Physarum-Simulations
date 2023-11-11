@@ -42,7 +42,7 @@ public class SlimeAlgorithm : MonoBehaviour
 	/// <summary>
 	/// How many pixels agents move at each algorithm step.
 	/// </summary>
-	[Range(0, 200)] public float moveSpeed;
+	[Range(0, 10)] public float moveSpeed;
 
 	/// <summary>
 	/// Number of algorithm steps to run at each frame.
@@ -101,12 +101,6 @@ public class SlimeAlgorithm : MonoBehaviour
 	/// </summary>
 	public bool agentCollision;
 	
-	
-	/// <summary>
-	/// Toggles slightly random steering.
-	/// </summary>
-	public bool randomSteering;
-
 	/// <summary>
 	/// Initializes algorithm and compute shader parameters.
 	/// </summary>
@@ -175,7 +169,6 @@ public class SlimeAlgorithm : MonoBehaviour
 		algorithmComputeShader.SetInt("kernelHalfWidth", kernelHalfWidth);
 		algorithmComputeShader.SetInt("trailDeposit", trailDeposit);
 		algorithmComputeShader.SetBool("agentCollision", agentCollision);
-		algorithmComputeShader.SetBool("randomSteering", randomSteering);
 	}
 
 	/// <summary>

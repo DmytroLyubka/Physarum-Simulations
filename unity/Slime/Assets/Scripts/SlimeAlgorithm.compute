@@ -18,7 +18,6 @@ float sensorAngle; // sensor angle relative to agent
 float time; // total time passed since start of simulation
 int trailDeposit; // trail value agents deposit
 bool agentCollision; // agent collision toggle
-bool randomSteering;
 
 // Computes a random 32-bit uint in the range 0 to 4294967295.
 uint pcgHash(uint input)
@@ -65,7 +64,6 @@ void AlgorithmStep (uint3 id : SV_DispatchThreadID)
     float2 pos = agent.position;
 
     uint random = pcgHash(pos.y * width + pos.x + pcgHash(id.x + time * 100000));
-    float randomSteerStrength = randomSteering ? 1 : scale(random);
 
     // Check sensor trail values
     float frontTrailValue = checkSensor(agent, 0);
@@ -91,25 +89,25 @@ void AlgorithmStep (uint3 id : SV_DispatchThreadID)
      */
     else if (frontTrailValue < leftTrailValue && frontTrailValue < rightTrailValue)
     {
-        if (randomSteerStrength > 0.5)
+        if (scale(random) > 0.5)
         {
-            agents[id.x].angle += randomSteerStrength * agentRotationAngle;
+            agents[id.x].angle += agentRotationAngle;
         }
         else
         {
-            agents[id.x].angle -= randomSteerStrength * agentRotationAngle;
+            agents[id.x].angle -= agentRotationAngle;
         }
     }
 
     // Turn right
     else if (rightTrailValue > leftTrailValue)
     {
-        agents[id.x].angle -= randomSteerStrength * agentRotationAngle;
+        agents[id.x].angle -= agentRotationAngle;
     }
     // Turn left
     else if (leftTrailValue > rightTrailValue) 
     {
-        agents[id.x].angle += randomSteerStrength * agentRotationAngle;
+        agents[id.x].angle += agentRotationAngle;
     }
     else
     {
