@@ -168,10 +168,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   algorithmComputeShader: {fileID: 7200000, guid: 5cd4523539f6f0b47ae537461922756a, type: 3}
-  width: 1280
-  height: 720
+  width: 400
+  height: 400
   bufferMaxAgentCount: 0
-  agentCount: 6000
+  agentCount: 24000
   moveSpeed: 1
   algorithmStepsPerFrame: 2
   agentRotationAngle: 45
@@ -184,7 +184,6 @@ MonoBehaviour:
   kernelHalfWidth: 1
   trailDeposit: 300
   agentCollision: 0
-  randomSteering: 0
 --- !u!1 &1079781145
 GameObject:
   m_ObjectHideFlags: 0
@@ -212,7 +211,7 @@ Transform:
   m_GameObject: {fileID: 1079781145}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 16, y: 9, z: 1}
+  m_LocalScale: {x: 16, y: 16, z: 1}
   m_Children: []
   m_Father: {fileID: 801894659}
   m_RootOrder: 0
@@ -319,7 +318,7 @@ Camera:
   far clip plane: 1000
   field of view: 60
   orthographic: 1
-  orthographic size: 4.5
+  orthographic size: 8
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2

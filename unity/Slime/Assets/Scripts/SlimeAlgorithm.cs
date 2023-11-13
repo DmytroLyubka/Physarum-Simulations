@@ -161,7 +161,7 @@ public class SlimeAlgorithm : MonoBehaviour
 		algorithmComputeShader.SetFloat("time", Time.fixedTime);
 		algorithmComputeShader.SetInt("agentCount", agentCount);
 		algorithmComputeShader.SetFloat("moveSpeed", moveSpeed);
-		algorithmComputeShader.SetFloat("agentRotationAngle", agentRotationAngle* (Mathf.PI / 180));
+		algorithmComputeShader.SetFloat("agentRotationAngle", agentRotationAngle * (Mathf.PI / 180));
 		algorithmComputeShader.SetFloat("sensorOffset", sensorOffset);
 		algorithmComputeShader.SetFloat("sensorAngle", sensorAngle * (Mathf.PI / 180));
 		algorithmComputeShader.SetFloat("decayRate", decay ? decayRate : 0);
