@@ -102,6 +102,11 @@ public class SlimeAlgorithm : MonoBehaviour
 	public bool agentCollision;
 	
 	/// <summary>
+	/// Identifies canvas edges to form a virtual torus
+	/// </summary>
+	public bool torus;
+	
+	/// <summary>
 	/// Initializes algorithm and compute shader parameters.
 	/// </summary>
 	void Init()
@@ -129,8 +134,7 @@ public class SlimeAlgorithm : MonoBehaviour
 		
 		// Create agents with random position and angles
 		Agent[] agents = new Agent[bufferMaxAgentCount ? 65535 : agentCount];
-		for (int i = 0; i < agents.Length; i++) 
-		{
+		for (int i = 0; i < agents.Length; i++) {
 			Agent agent = new Agent() 
 			{
 				position = new Vector2(Random.value * width, Random.value * height),
@@ -169,6 +173,7 @@ public class SlimeAlgorithm : MonoBehaviour
 		algorithmComputeShader.SetInt("kernelHalfWidth", kernelHalfWidth);
 		algorithmComputeShader.SetInt("trailDeposit", trailDeposit);
 		algorithmComputeShader.SetBool("agentCollision", agentCollision);
+		algorithmComputeShader.SetBool("torus", torus);
 	}
 
 	/// <summary>

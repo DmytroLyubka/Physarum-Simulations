@@ -1,7 +1,8 @@
 #pragma kernel AlgorithmStep
 
 // Agent structure to match that of the slime algorithm.
-struct Agent {
+struct Agent
+{
     float2 position;
     float angle;
 };
@@ -18,6 +19,7 @@ float sensorAngle; // sensor angle relative to agent
 float time; // total time passed since start of simulation
 int trailDeposit; // trail value agents deposit
 bool agentCollision; // agent collision toggle
+bool torus; // torus surface toggle
 
 // Computes a random 32-bit uint in the range 0 to 4294967295.
 uint pcgHash(uint input)
@@ -34,6 +36,11 @@ float scale(uint input)
     return input / 4294967295.0;
 }
 
+// Evaluates N mod M, supports negative N (native % operator does not)
+float mod(float n, float m)
+{
+    return ((n % m) + m) % m;
+}
 
 // Checks trail map value detected by a sensor with angle sensorDeltaAngle
 // relative to agent.
@@ -43,8 +50,17 @@ float checkSensor(Agent agent, float sensorDeltaAngle)
     float2 sensorDirection = float2(cos(globalSensorAngle), sin(globalSensorAngle));
     float2 sensorPosition = agent.position + sensorDirection * sensorOffset;
 
-    int sensorCoordX = clamp(sensorPosition.x, 0, width-1);
-    int sensorCoordY = clamp(sensorPosition.y, 0, height-1);
+    int sensorCoordX, sensorCoordY;
+    if (torus)
+    {
+        sensorCoordX = (int) round(mod(sensorPosition.x, width));
+        sensorCoordY = (int) round(mod(sensorPosition.y, height));
+    }
+    else
+    {
+        sensorCoordX = clamp(sensorPosition.x, 0, width-1);
+        sensorCoordY = clamp(sensorPosition.y, 0, height-1);
+    }
 
     // Return equally weighted sum of 3 channels.
     return dot(trailMap[int2(sensorCoordX, sensorCoordY)].xyz, int3(1, 1, 1));
@@ -104,7 +120,7 @@ void AlgorithmStep (uint3 id : SV_DispatchThreadID)
         agents[id.x].angle -= agentRotationAngle;
     }
     // Turn left
-    else if (leftTrailValue > rightTrailValue) 
+    else if (leftTrailValue > rightTrailValue)
     {
         agents[id.x].angle += agentRotationAngle;
     }
@@ -120,6 +136,12 @@ void AlgorithmStep (uint3 id : SV_DispatchThreadID)
     float2 direction = float2(cos(agent.angle), sin(agent.angle));
     float2 newPosition = agent.position + direction * moveSpeed;
 
+    if (torus)
+    {
+        newPosition.x = mod(newPosition.x, width);
+        newPosition.y = mod(newPosition.y, height);
+    }
+
     bool newPositionOccupied = false;
     // Check if new position is already occupied by an agent
     if (agentCollision)
@@ -134,8 +156,9 @@ void AlgorithmStep (uint3 id : SV_DispatchThreadID)
     }
 
     // Agent has hit boundary or target position is occupied, choose random agent angle and don't deposit trail
-    if ((newPosition.x < 0 || newPosition.x >= width || newPosition.y < 0 || newPosition.y >= height)
-            || newPositionOccupied) {
+    if ((((newPosition.x < 0 || newPosition.x >= width || newPosition.y < 0 || newPosition.y >= height)) && !torus)
+            || newPositionOccupied)
+    {
         random = pcgHash(random);
         float randomAngle = scale(random) * 2 * 3.1415;
 
@@ -145,7 +168,7 @@ void AlgorithmStep (uint3 id : SV_DispatchThreadID)
         agents[id.x].angle = randomAngle;
     }
     // No boundaries hit, deposit trail
-    else    
+    else
     {
         trailMap[int2(newPosition)] = float4(trailMap[int2(newPosition)].xyz + trailDeposit, 0.0);
     }
