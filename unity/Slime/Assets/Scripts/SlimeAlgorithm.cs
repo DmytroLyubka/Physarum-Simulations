@@ -24,6 +24,7 @@ public class SlimeAlgorithm : MonoBehaviour
 	/// </summary>
 	public ComputeBuffer agentBuffer;
 
+	[Header("Canvas Properties")]
 	/// <summary>
 	/// Texture width.
 	/// </summary>
@@ -34,6 +35,8 @@ public class SlimeAlgorithm : MonoBehaviour
 	/// </summary>
 	[Range(1, 2000)] public int height;
 
+
+	[Header("Agent Properties")]
 	/// <summary>
 	/// Store maximum number of agents that can be processed in a single thread group dimension (65535).
 	/// </summary>
@@ -69,6 +72,7 @@ public class SlimeAlgorithm : MonoBehaviour
 	/// </summary>
 	[Range(0, 360)] public float sensorAngle;
 
+	[Header("Trail Properties")]
 	/// <summary>
 	/// Toggle trail map decay.
 	/// </summary>
@@ -106,6 +110,7 @@ public class SlimeAlgorithm : MonoBehaviour
 	/// </summary>
 	[Min(0)] public float staticTrailStrength;
 
+	[Header("General Settings")]
 	/// <summary>
 	/// Enable agent collision.
 	/// </summary>
@@ -117,10 +122,17 @@ public class SlimeAlgorithm : MonoBehaviour
 	public bool torus;
 
 	/// <summary>
+	/// Enable static trails.
+	/// </summary>
+	public bool staticTrails;
+
+	/// <summary>
 	/// Enable static trails overlay.
 	/// </summary>
 	public bool staticOverlay;
 	
+	private float mouseX;
+	private float mouseY;
 	
 	/// <summary>
 	/// Initializes algorithm and compute shader parameters.
@@ -160,6 +172,7 @@ public class SlimeAlgorithm : MonoBehaviour
 		algorithmComputeShader.SetTexture(2, "processedTrailMap", processedTrailMap);
 		algorithmComputeShader.SetTexture(3, "processedTrailMap", processedTrailMap);
 		algorithmComputeShader.SetTexture(3, "staticTrailMap", staticTrailMap);
+		algorithmComputeShader.SetTexture(4, "staticTrailMap", staticTrailMap);
 		
 		// Create agents with random position and angles
 		Agent[] agents = new Agent[bufferMaxAgentCount ? 65535 : agentCount];
@@ -202,7 +215,10 @@ public class SlimeAlgorithm : MonoBehaviour
 		algorithmComputeShader.SetFloat("staticTrailStrength", staticTrailStrength);
 		algorithmComputeShader.SetBool("agentCollision", agentCollision);
 		algorithmComputeShader.SetBool("torus", torus);
+		algorithmComputeShader.SetBool("staticTrails", staticTrails);
 		algorithmComputeShader.SetBool("staticOverlay", staticOverlay);
+		algorithmComputeShader.SetFloat("mouseX", mouseX);
+		algorithmComputeShader.SetFloat("mouseY", mouseY);
 	}
 
 	/// <summary>
@@ -214,7 +230,10 @@ public class SlimeAlgorithm : MonoBehaviour
 		Dispatch(algorithmComputeShader, width, height, 1, kernelIndex: 1); // ProcessTrailMap
 		Dispatch(algorithmComputeShader, width, height, 1, kernelIndex: 2); // RefreshStaticValues
 		Graphics.Blit(processedTrailMap, trailMap);
-		Dispatch(algorithmComputeShader, width, height, 1, kernelIndex: 3); // StaticOverlay
+		if (staticOverlay)
+		{
+			Dispatch(algorithmComputeShader, width, height, 1, kernelIndex: 3); // StaticOverlay
+		}
 	}
 
 	// Start is called before the first frame update.
@@ -234,6 +253,25 @@ public class SlimeAlgorithm : MonoBehaviour
 		{
 			UpdateSettings();
 			AlgorithmStep();
+		}
+	}
+	
+	
+	void Update() 
+	{
+		Vector3 mousePosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+		Vector2 texturePosition = ((new Vector2(mousePosition.x, mousePosition.y) + new Vector2(Camera.main.orthographicSize, Camera.main.orthographicSize))) / (Camera.main.orthographicSize * 2) * width;
+		
+		mouseX = texturePosition.x;
+		mouseY = texturePosition.y;
+		
+		if (Input.GetMouseButton(0)) 
+		{			
+			if (mouseX > 0 && mouseX <= width && mouseY > 0 && mouseY <= height)
+			{
+				// Debug.Log($"({texturePosition.x}, {texturePosition.y})");
+				Dispatch(algorithmComputeShader, 1, 1, 1, kernelIndex: 4); // DrawStaticTrail
+			}
 		}
 	}
 
