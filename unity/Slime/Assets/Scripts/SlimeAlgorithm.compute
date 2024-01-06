@@ -72,7 +72,9 @@ float checkSensor(Agent agent, float sensorDeltaAngle)
     // Return equally weighted sum of RGB channels for sensor's pixel in both the dynamic and static trail maps
     if (staticTrails)
     {
-        return dot(trailMap[int2(sensorCoordX, sensorCoordY)].xyz, int3(1, 1, 1)) + dot(staticTrailMap[int2(sensorCoordX, sensorCoordY)].xyz, int3(1, 1, 1)) * staticTrailStrength;
+        // Static map formula: (alpha * 2) - 1, where alpha = 0 or 1
+        return dot(trailMap[int2(sensorCoordX, sensorCoordY)].xyz, int3(1, 1, 1)) 
+            + dot(staticTrailMap[int2(sensorCoordX, sensorCoordY)].xyz, int3(1, 1, 1)) * staticTrailStrength * ((staticTrailMap[int2(sensorCoordX, sensorCoordY)].w * 2) - 1);
     }
     else
     {
@@ -99,51 +101,148 @@ void AlgorithmStep (uint3 id : SV_DispatchThreadID)
     float leftTrailValue = checkSensor(agent, sensorAngle);
     float rightTrailValue = checkSensor(agent, -sensorAngle);
 
-    // Continue in same direction
-    if (frontTrailValue > leftTrailValue && frontTrailValue > rightTrailValue)
+    // All trail values are positive (no repellents found), algorithm step matches Jones's
+    if (frontTrailValue >= 0 && leftTrailValue >= 0 && rightTrailValue >= 0)
     {
-        // pass
-    }
-    /* Note: It doesn't really make sense to have the choice between left and right
-     * rotation be random here? The fact that the front sensor is detecting a weaker
-     * chemoattractant than the two off-centre sensors does not imply that the left
-     * and right sensors have equal chemoattractant concentration, it is very much
-     * possible that the left sensor has detected a higher trail value while at the
-     * same time the front sensor has detected the lowest trail value (in which case
-     * the agent should rotate left).
-     * 
-     * TODO: Make this step more deterministic, only have rotation choice be random if
-     * left and right sensors have the same trail value, both of which must be higher
-     * than that of the front sensor.
-     */
-    else if (frontTrailValue < leftTrailValue && frontTrailValue < rightTrailValue)
-    {
-        if (scale(random) > 0.5)
+        // Continue in same direction
+        if (frontTrailValue > leftTrailValue && frontTrailValue > rightTrailValue)
+        {
+            // pass
+        }
+        /* Note: It doesn't really make sense to have the choice between left and right
+        * rotation be random here? The fact that the front sensor is detecting a weaker
+        * chemoattractant than the two off-centre sensors does not imply that the left
+        * and right sensors have equal chemoattractant concentration, it is very much
+        * possible that the left sensor has detected a higher trail value while at the
+        * same time the front sensor has detected the lowest trail value (in which case
+        * the agent should rotate left).
+        * 
+        * TODO: Make this step more deterministic, only have rotation choice be random if
+        * left and right sensors have the same trail value, both of which must be higher
+        * than that of the front sensor.
+        */
+        else if (frontTrailValue < leftTrailValue && frontTrailValue < rightTrailValue)
+        {
+            if (scale(random) > 0.5)
+            {
+                agents[id.x].angle += agentRotationAngle;
+            }
+            else
+            {
+                agents[id.x].angle -= agentRotationAngle;
+            }
+        }
+
+        // Turn right
+        else if (rightTrailValue > leftTrailValue)
+        {
+            agents[id.x].angle -= agentRotationAngle;
+        }
+        // Turn left
+        else if (leftTrailValue > rightTrailValue)
         {
             agents[id.x].angle += agentRotationAngle;
         }
         else
         {
-            agents[id.x].angle -= agentRotationAngle;
+            /* All sensor trail values are equal - maybe have random choice of rotation direction
+                * here?
+                */
+            // pass
         }
     }
-
-    // Turn right
-    else if (rightTrailValue > leftTrailValue)
-    {
-        agents[id.x].angle -= agentRotationAngle;
-    }
-    // Turn left
-    else if (leftTrailValue > rightTrailValue)
-    {
-        agents[id.x].angle += agentRotationAngle;
-    }
+    // One of the sensors found a repellent: custom algorithm for deciding on rotation direction + magnitude.
     else
     {
-        /* All sensor trail values are equal - maybe have random choice of rotation direction
-            * here?
-            */
-        // pass
+        /* All trail values are negative, randomly rotate. We could maybe make this more deterministic
+         * and rotate in the direction of the largest trail value?
+         */
+        if (leftTrailValue < 0 && frontTrailValue < 0 && rightTrailValue < 0)
+        {
+            if (scale(random) > 0.5)
+            {
+                agents[id.x].angle += agentRotationAngle;
+            }
+            else
+            {
+                agents[id.x].angle -= agentRotationAngle;
+            }
+        }
+        // Left and front trail values are negative: rotate right twice as much.
+        else if (leftTrailValue < 0 && frontTrailValue < 0)
+        {
+            agents[id.x].angle -= 2 * agentRotationAngle;
+        }
+        // Right and front trail values are negative: rotate left twice as much.
+        else if (rightTrailValue < 0 && frontTrailValue < 0)
+        {
+            agents[id.x].angle += 2 * agentRotationAngle;
+        }
+        // Left and right trail values are negative: don't rotate.
+        else if (leftTrailValue < 0 && rightTrailValue < 0)
+        {
+            // pass
+        }
+        // Left trail value is negative: rotate right once if front is largest, twice if right is largest.
+        else if (leftTrailValue < 0)
+        {
+            if (frontTrailValue > rightTrailValue)
+            {
+                agents[id.x].angle -= agentRotationAngle;
+            }
+            else if (rightTrailValue > frontTrailValue)
+            {
+                agents[id.x].angle -= 2 * agentRotationAngle;
+            }
+            // Right and front trail values are equal: randomly rotate right once or twice.
+            else
+            {
+                if (scale(random) > 0.5)
+                {
+                    agents[id.x].angle -= agentRotationAngle;
+                }
+                else
+                {
+                    agents[id.x].angle -= 2 * agentRotationAngle;
+                }
+            }
+        }
+        // Right trail value is negative: rotate left once if front is largest, twice if left is largest.
+        else if (rightTrailValue < 0)
+        {
+            if (frontTrailValue > leftTrailValue)
+            {
+                agents[id.x].angle += agentRotationAngle;
+            }
+            else if (leftTrailValue > frontTrailValue)
+            {
+                agents[id.x].angle += 2 * agentRotationAngle;
+            }
+            // Left and front trail values are equal: randomly rotate left once or twice.
+            else
+            {
+                if (scale(random) > 0.5)
+                {
+                    agents[id.x].angle += agentRotationAngle;
+                }
+                else
+                {
+                    agents[id.x].angle += 2 * agentRotationAngle;
+                }
+            }
+        }
+        // Front trail value is negative: rotate left twice if left is largest, right twice if right is largest.
+        else if (frontTrailValue < 0)
+        {
+            if (leftTrailValue > rightTrailValue)
+            {
+                agents[id.x].angle += 2 * agentRotationAngle;
+            }
+            else
+            {
+                agents[id.x].angle -= 2 * agentRotationAngle;
+            }
+        }
     }
 
     // Update position
@@ -237,10 +336,10 @@ void RefreshStaticValues (uint3 id : SV_DispatchThreadID)
         return;
     }
 
-    // Circle at the centre of the texture
+    // Circular attractant region at the centre of the texture
     if ((id.x - (float)width/2.0) * (id.x - (float)width/2) + (id.y - (float)height/2) * (id.y - (float)height/2) <= (float)width * 5)
     {
-        staticTrailMap[id.xy] = float4(0.25, 0.0, 0.0, 0);
+        // staticTrailMap[id.xy] = float4(0.5, 0.0, 0.0, 1.0);
     }
 }
 
@@ -260,20 +359,36 @@ void StaticOverlay (uint3 id : SV_DispatchThreadID)
 
 #pragma kernel DrawStaticTrail
 
-float mouseX;
-float mouseY;
+float mouseX; // mouse x-coordinate
+float mouseY; // mouse y-coordinate
+int brushType; // 0: attractant, 1: repellent, 2: eraser
+int brushHalfWidth; // half-width of brush tooltip
 
-// Edits static trail map.
+// Draw attractant on trail map.
 [numthreads(1,1,1)]
 void DrawStaticTrail (uint3 id : SV_DispatchThreadID)
 {
-    for (int x = -5; x <= 5; x++)
+    float4 color;
+    if (brushType == 0) // attractant
     {
-        for (int y = -5; y <= 5; y++)
+        color = float4(0.5, 0.0, 0.0, 1.0);
+    }
+    else if (brushType == 1) // repellent
+    {
+        color = float4(0.0, 0.0, 0.5, 0.0);
+    }
+    else if (brushType == 2) // eraser
+    {
+        color = float4(0.0, 0.0, 0.0, 0.0);
+    }
+
+    for (int x = -brushHalfWidth; x <= brushHalfWidth; x++)
+    {
+        for (int y = -brushHalfWidth; y <= brushHalfWidth; y++)
         {
             int kernelX = wrap(mouseX + x, width);
             int kernelY = wrap(mouseY + y, height);
-            staticTrailMap[int2(kernelX, kernelY)] = float4(0.5, 0.0, 0.0, 0);
+            staticTrailMap[int2(kernelX, kernelY)] = color;
         }
     }
 }

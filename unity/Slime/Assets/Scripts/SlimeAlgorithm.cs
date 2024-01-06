@@ -131,8 +131,31 @@ public class SlimeAlgorithm : MonoBehaviour
 	/// </summary>
 	public bool staticOverlay;
 	
+	/// <summary>
+	/// Width of brush used for static trail map drawing = 1 + 2 * brushHalfWidth.
+	/// </summary>
+	public int brushHalfWidth;
+	
+	/// <summary>
+	/// Stores mouse position's x-coordinate.
+	/// </summary>
 	private float mouseX;
+	
+	/// <summary>
+	/// Stores mouse position's y-coordinate.
+	/// </summary>
 	private float mouseY;
+	
+	/// <summary>
+	/// Defines static trail brush tooltip type to be passed onto compute shader.
+	/// 0: attractant, 1: repellent, 2: eraser.
+	/// </summary>
+	private int brushType;
+	
+	/// <summary>
+	/// Tracks static trail eraser status.
+	/// </summary>
+	private bool erase;
 	
 	/// <summary>
 	/// Initializes algorithm and compute shader parameters.
@@ -217,8 +240,10 @@ public class SlimeAlgorithm : MonoBehaviour
 		algorithmComputeShader.SetBool("torus", torus);
 		algorithmComputeShader.SetBool("staticTrails", staticTrails);
 		algorithmComputeShader.SetBool("staticOverlay", staticOverlay);
+		algorithmComputeShader.SetInt("brushHalfWidth", brushHalfWidth);
 		algorithmComputeShader.SetFloat("mouseX", mouseX);
 		algorithmComputeShader.SetFloat("mouseY", mouseY);
+		algorithmComputeShader.SetInt("brushType", brushType);
 	}
 
 	/// <summary>
@@ -249,9 +274,9 @@ public class SlimeAlgorithm : MonoBehaviour
 	// Update is called once per frame.
 	void FixedUpdate()
 	{
+		UpdateSettings();
 		for (int i = 0; i < algorithmStepsPerFrame; i++) 
 		{
-			UpdateSettings();
 			AlgorithmStep();
 		}
 	}
@@ -266,12 +291,36 @@ public class SlimeAlgorithm : MonoBehaviour
 		mouseY = texturePosition.y;
 		
 		if (Input.GetMouseButton(0)) 
-		{			
+		{
 			if (mouseX > 0 && mouseX <= width && mouseY > 0 && mouseY <= height)
 			{
+				if (!erase)
+				{
+					brushType = 0;
+					algorithmComputeShader.SetInt("brushType", brushType);
+				}
 				// Debug.Log($"({texturePosition.x}, {texturePosition.y})");
 				Dispatch(algorithmComputeShader, 1, 1, 1, kernelIndex: 4); // DrawStaticTrail
 			}
+		}
+		else if (Input.GetMouseButton(1)) 
+		{
+			if (mouseX > 0 && mouseX <= width && mouseY > 0 && mouseY <= height)
+			{
+				if (!erase)
+				{
+					brushType = 1;
+					algorithmComputeShader.SetInt("brushType", brushType);
+				}
+				// Debug.Log($"({texturePosition.x}, {texturePosition.y})");
+				Dispatch(algorithmComputeShader, 1, 1, 1, kernelIndex: 4); // DrawStaticTrail
+			}
+		}
+		else if (Input.GetMouseButtonDown(2))
+		{
+			erase = !erase;
+			brushType = 2;
+			algorithmComputeShader.SetInt("brushType", brushType);
 		}
 	}
 
