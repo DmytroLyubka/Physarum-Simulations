@@ -9,6 +9,7 @@ struct Agent
 
 RWStructuredBuffer<Agent> agents; // contains agent structures
 RWTexture2D<float4> trailMap; // tracks agent positions over time
+RWTexture2D<float4> staticTrailMap; // tracks static trails
 uint agentCount; // number of agents in simulation
 int width; // texture width
 int height; // texture height
@@ -20,6 +21,7 @@ float time; // total time passed since start of simulation
 int trailDeposit; // trail value agents deposit
 bool agentCollision; // agent collision toggle
 bool torus; // torus surface toggle
+float staticTrailStrength; // strength of static trails
 
 // Computes a random 32-bit uint in the range 0 to 4294967295.
 uint pcgHash(uint input)
@@ -62,8 +64,8 @@ float checkSensor(Agent agent, float sensorDeltaAngle)
         sensorCoordY = clamp(sensorPosition.y, 0, height-1);
     }
 
-    // Return equally weighted sum of 3 channels.
-    return dot(trailMap[int2(sensorCoordX, sensorCoordY)].xyz, int3(1, 1, 1));
+    // Return equally weighted sum of RGB channels for sensor's pixel in both the dynamic and static trail maps
+    return dot(trailMap[int2(sensorCoordX, sensorCoordY)].xyz, int3(1, 1, 1)) + dot(staticTrailMap[int2(sensorCoordX, sensorCoordY)].xyz, int3(1, 1, 1)) * staticTrailStrength;
 }
 
 // Executes algorithm step.
@@ -170,7 +172,7 @@ void AlgorithmStep (uint3 id : SV_DispatchThreadID)
     // No boundaries hit, deposit trail
     else
     {
-        trailMap[int2(newPosition)] = float4(trailMap[int2(newPosition)].xyz + trailDeposit, 0.0);
+        trailMap[int2(newPosition)] = float4(trailMap[int2(newPosition)].xyz + trailDeposit, trailMap[int2(newPosition)].w);
     }
 
     agents[id.x].position = newPosition;
@@ -210,4 +212,40 @@ void ProcessTrailMap (uint3 id : SV_DispatchThreadID)
     float3 weightedDiffusedTrail = (1 - diffuseRate) * trailMap[id.xy].xyz + diffuseRate * diffusedTrail;
 
     processedTrailMap[id.xy] = float4(max(0, weightedDiffusedTrail - decayRate), trailMap[id.xy].w);
+}
+
+#pragma kernel RefreshStaticValues
+
+// Sets static trail map values.
+[numthreads(8,8,1)]
+void RefreshStaticValues (uint3 id : SV_DispatchThreadID)
+{
+    if (id.x < 0 || id.x >= (uint)width || id.y < 0 || id.y >= (uint)height)
+    {
+        return;
+    }
+
+    if ((id.x - (float)width/2.0) * (id.x - (float)width/2) + (id.y - (float)height/2) * (id.y - (float)height/2) <= (float)width * 5)
+    {
+        staticTrailMap[id.xy] = float4(0.5, 0.0, 0.0, 0);
+    }
+}
+
+#pragma kernel StaticOverlay
+
+bool staticOverlay;
+
+// Overlays static trail map image on output.
+[numthreads(8,8,1)]
+void StaticOverlay (uint3 id : SV_DispatchThreadID)
+{
+    if (id.x < 0 || id.x >= (uint)width || id.y < 0 || id.y >= (uint)height)
+    {
+        return;
+    }
+
+    if (staticOverlay)
+    {
+        processedTrailMap[id.xy] += staticTrailMap[id.xy];
+    }
 }

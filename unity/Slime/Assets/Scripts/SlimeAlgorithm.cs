@@ -13,7 +13,12 @@ public class SlimeAlgorithm : MonoBehaviour
 	/// Stores processed (decayed, diffused, etc.) trail map values over time.
 	/// </summary>
 	private RenderTexture processedTrailMap;
-
+	
+	/// <summary>
+	/// Stores static attracting/repelling trails.
+	/// </summary>
+	private RenderTexture staticTrailMap;
+	
 	/// <summary>
 	/// Holds agent objects to be used by compute shaders.
 	/// </summary>
@@ -95,6 +100,11 @@ public class SlimeAlgorithm : MonoBehaviour
 	/// Chemoattractant value agents drop.
 	/// </summary>
 	[Min(0)] public int trailDeposit;
+	
+	/// <summary>
+	/// Strength of static trails.
+	/// </summary>
+	[Min(0)] public float staticTrailStrength;
 
 	/// <summary>
 	/// Enable agent collision.
@@ -105,6 +115,12 @@ public class SlimeAlgorithm : MonoBehaviour
 	/// Identifies canvas edges to form a virtual torus
 	/// </summary>
 	public bool torus;
+
+	/// <summary>
+	/// Enable static trails overlay.
+	/// </summary>
+	public bool staticOverlay;
+	
 	
 	/// <summary>
 	/// Initializes algorithm and compute shader parameters.
@@ -127,10 +143,23 @@ public class SlimeAlgorithm : MonoBehaviour
 		};
 		processedTrailMap.Create();
 		
+		// Create static trail map
+		staticTrailMap = new RenderTexture(width, height, 0) 
+		{
+			enableRandomWrite = true,
+			filterMode = FilterMode.Bilinear
+		};
+		staticTrailMap.Create();
+		
 		// Assign textures in compute shader
 		algorithmComputeShader.SetTexture(0, "trailMap", trailMap);
+		algorithmComputeShader.SetTexture(0, "staticTrailMap", staticTrailMap);
 		algorithmComputeShader.SetTexture(1, "trailMap", trailMap);
 		algorithmComputeShader.SetTexture(1, "processedTrailMap", processedTrailMap);
+		algorithmComputeShader.SetTexture(2, "staticTrailMap", staticTrailMap);
+		algorithmComputeShader.SetTexture(2, "processedTrailMap", processedTrailMap);
+		algorithmComputeShader.SetTexture(3, "processedTrailMap", processedTrailMap);
+		algorithmComputeShader.SetTexture(3, "staticTrailMap", staticTrailMap);
 		
 		// Create agents with random position and angles
 		Agent[] agents = new Agent[bufferMaxAgentCount ? 65535 : agentCount];
@@ -150,8 +179,6 @@ public class SlimeAlgorithm : MonoBehaviour
 		algorithmComputeShader.SetBuffer(0, "agents", agentBuffer);
 
 		// Set initial parameters in compute shader
-		algorithmComputeShader.SetInt("width", width);
-		algorithmComputeShader.SetInt("height", height);
 		UpdateSettings();
 	}
 
@@ -172,8 +199,10 @@ public class SlimeAlgorithm : MonoBehaviour
 		algorithmComputeShader.SetFloat("diffuseRate", diffuse ? diffuseRate : 0);
 		algorithmComputeShader.SetInt("kernelHalfWidth", kernelHalfWidth);
 		algorithmComputeShader.SetInt("trailDeposit", trailDeposit);
+		algorithmComputeShader.SetFloat("staticTrailStrength", staticTrailStrength);
 		algorithmComputeShader.SetBool("agentCollision", agentCollision);
 		algorithmComputeShader.SetBool("torus", torus);
+		algorithmComputeShader.SetBool("staticOverlay", staticOverlay);
 	}
 
 	/// <summary>
@@ -181,10 +210,11 @@ public class SlimeAlgorithm : MonoBehaviour
 	/// </summary>
 	private void AlgorithmStep() 
 	{
-		Dispatch(algorithmComputeShader, agentCount, 1, 1, kernelIndex: 0);
-		Dispatch(algorithmComputeShader, width, height, 1, kernelIndex: 1);
-		
+		Dispatch(algorithmComputeShader, agentCount, 1, 1, kernelIndex: 0); // AlgorithmStep
+		Dispatch(algorithmComputeShader, width, height, 1, kernelIndex: 1); // ProcessTrailMap
+		Dispatch(algorithmComputeShader, width, height, 1, kernelIndex: 2); // RefreshStaticValues
 		Graphics.Blit(processedTrailMap, trailMap);
+		Dispatch(algorithmComputeShader, width, height, 1, kernelIndex: 3); // StaticOverlay
 	}
 
 	// Start is called before the first frame update.
