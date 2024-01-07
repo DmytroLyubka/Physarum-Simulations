@@ -103,7 +103,7 @@ public class SlimeAlgorithm : MonoBehaviour
 	/// <summary>
 	/// Chemoattractant value agents drop.
 	/// </summary>
-	[Min(0)] public int trailDeposit;
+	[Range(0, 1)] public float trailDeposit;
 	
 	/// <summary>
 	/// Strength of static trails.
@@ -111,6 +111,11 @@ public class SlimeAlgorithm : MonoBehaviour
 	[Min(0)] public float staticTrailStrength;
 
 	[Header("General Settings")]
+	/// <summary>
+	/// Enforces circular agent domain.
+	/// </summary>
+	public bool circularDomain;
+	
 	/// <summary>
 	/// Enable agent collision.
 	/// </summary>
@@ -191,6 +196,7 @@ public class SlimeAlgorithm : MonoBehaviour
 		algorithmComputeShader.SetTexture(0, "staticTrailMap", staticTrailMap);
 		algorithmComputeShader.SetTexture(1, "trailMap", trailMap);
 		algorithmComputeShader.SetTexture(1, "processedTrailMap", processedTrailMap);
+		algorithmComputeShader.SetTexture(1, "staticTrailMap", staticTrailMap);
 		algorithmComputeShader.SetTexture(2, "staticTrailMap", staticTrailMap);
 		algorithmComputeShader.SetTexture(2, "processedTrailMap", processedTrailMap);
 		algorithmComputeShader.SetTexture(3, "processedTrailMap", processedTrailMap);
@@ -199,10 +205,28 @@ public class SlimeAlgorithm : MonoBehaviour
 		
 		// Create agents with random position and angles
 		Agent[] agents = new Agent[bufferMaxAgentCount ? 65535 : agentCount];
-		for (int i = 0; i < agents.Length; i++) {
-			Agent agent = new Agent() 
+		for (int i = 0; i < agents.Length; i++)
+		{
+			Vector2 pos = new Vector2();
+			if (!circularDomain)
 			{
-				position = new Vector2(Random.value * width, Random.value * height),
+				pos = new Vector2(Random.value * width, Random.value * height);
+			}
+			else
+			{
+				float x = width;
+				float y = height;
+				while ((x - width/2) * (x - width/2) + (y - height/2) * (y - height/2) > width/2.25 * width/2.25)
+				{
+					x = Random.value * width;
+					y = Random.value * height;				
+				}
+				pos = new Vector2(x, y);
+				
+			}
+			Agent agent = new Agent()
+			{
+				position = pos,
 				angle = Random.value * 2 * Mathf.PI
 			};
 			agents[i] = agent;
@@ -234,8 +258,9 @@ public class SlimeAlgorithm : MonoBehaviour
 		algorithmComputeShader.SetFloat("decayRate", decay ? decayRate : 0);
 		algorithmComputeShader.SetFloat("diffuseRate", diffuse ? diffuseRate : 0);
 		algorithmComputeShader.SetInt("kernelHalfWidth", kernelHalfWidth);
-		algorithmComputeShader.SetInt("trailDeposit", trailDeposit);
+		algorithmComputeShader.SetFloat("trailDeposit", trailDeposit);
 		algorithmComputeShader.SetFloat("staticTrailStrength", staticTrailStrength);
+		algorithmComputeShader.SetBool("circularDomain", circularDomain);
 		algorithmComputeShader.SetBool("agentCollision", agentCollision);
 		algorithmComputeShader.SetBool("torus", torus);
 		algorithmComputeShader.SetBool("staticTrails", staticTrails);

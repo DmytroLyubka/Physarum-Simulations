@@ -18,11 +18,12 @@ float agentRotationAngle; // angle at which agents rotate
 float sensorOffset; // sensor distance from agent
 float sensorAngle; // sensor angle relative to agent
 float time; // total time passed since start of simulation
-int trailDeposit; // trail value agents deposit
+float trailDeposit; // trail value agents deposit
 bool agentCollision; // agent collision toggle
 bool torus; // torus surface toggle
 bool staticTrails; // toggle static trails
 float staticTrailStrength; // strength of static trails
+bool circularDomain; // toggles circular agent domain
 
 // Computes a random 32-bit uint in the range 0 to 4294967295.
 uint pcgHash(uint input)
@@ -72,9 +73,8 @@ float checkSensor(Agent agent, float sensorDeltaAngle)
     // Return equally weighted sum of RGB channels for sensor's pixel in both the dynamic and static trail maps
     if (staticTrails)
     {
-        // Static map formula: (alpha * 2) - 1, where alpha = 0 or 1
-        return dot(trailMap[int2(sensorCoordX, sensorCoordY)].xyz, int3(1, 1, 1)) 
-            + dot(staticTrailMap[int2(sensorCoordX, sensorCoordY)].xyz, int3(1, 1, 1)) * staticTrailStrength * ((staticTrailMap[int2(sensorCoordX, sensorCoordY)].w * 2) - 1);
+        return dot(trailMap[int2(sensorCoordX, sensorCoordY)].xyz, int3(1, 1, 1))
+            + ((staticTrailMap[int2(sensorCoordX, sensorCoordY)].w * staticTrailMap[int2(sensorCoordX, sensorCoordY)].w * 6) - 5 * staticTrailMap[int2(sensorCoordX, sensorCoordY)].w) * staticTrailStrength;
     }
     else
     {
@@ -101,6 +101,8 @@ void AlgorithmStep (uint3 id : SV_DispatchThreadID)
     float leftTrailValue = checkSensor(agent, sensorAngle);
     float rightTrailValue = checkSensor(agent, -sensorAngle);
 
+    bool newPositionOccupied = false;
+
     // All trail values are positive (no repellents found), algorithm step matches Jones's
     if (frontTrailValue >= 0 && leftTrailValue >= 0 && rightTrailValue >= 0)
     {
@@ -123,6 +125,31 @@ void AlgorithmStep (uint3 id : SV_DispatchThreadID)
         */
         else if (frontTrailValue < leftTrailValue && frontTrailValue < rightTrailValue)
         {
+            // // Turn right
+            // if (rightTrailValue > leftTrailValue)
+            // {
+            //     agents[id.x].angle -= agentRotationAngle;
+            // }
+            // // Turn left
+            // else if (leftTrailValue > rightTrailValue)
+            // {
+            //     agents[id.x].angle += agentRotationAngle;
+            // }
+            // else
+            // {
+            //     /* All sensor trail values are equal - maybe have random choice of rotation direction
+            //         * here?
+            //         */
+            //     // pass
+            //     if (scale(random) > 0.5)
+            //     {
+            //         agents[id.x].angle += agentRotationAngle;
+            //     }
+            //     else
+            //     {
+            //         agents[id.x].angle -= agentRotationAngle;
+            //     }
+            // }
             if (scale(random) > 0.5)
             {
                 agents[id.x].angle += agentRotationAngle;
@@ -159,14 +186,11 @@ void AlgorithmStep (uint3 id : SV_DispatchThreadID)
          */
         if (leftTrailValue < 0 && frontTrailValue < 0 && rightTrailValue < 0)
         {
-            if (scale(random) > 0.5)
-            {
-                agents[id.x].angle += agentRotationAngle;
-            }
-            else
-            {
-                agents[id.x].angle -= agentRotationAngle;
-            }
+            /* If the agent can't find a good path and there's repellent everywhere, then we don't want it
+             * to deposit a trail as that's a false positive for the surrounding agents. Instead, we treat
+             * it's destination position as being taken and later on randomly orient the agent.
+             */
+            newPositionOccupied = true;
         }
         // Left and front trail values are negative: rotate right twice as much.
         else if (leftTrailValue < 0 && frontTrailValue < 0)
@@ -255,7 +279,6 @@ void AlgorithmStep (uint3 id : SV_DispatchThreadID)
         newPosition.y = mod(newPosition.y, height);
     }
 
-    bool newPositionOccupied = false;
     // Check if new position is already occupied by an agent
     if (agentCollision)
     {
@@ -268,25 +291,46 @@ void AlgorithmStep (uint3 id : SV_DispatchThreadID)
         }
     }
 
-    // Agent has hit boundary or target position is occupied, choose random agent angle and don't deposit trail
-    if ((((newPosition.x < 0 || newPosition.x >= width || newPosition.y < 0 || newPosition.y >= height)) && !torus)
-            || newPositionOccupied)
+    if (circularDomain) // circular boundary
     {
-        random = pcgHash(random);
-        float randomAngle = scale(random) * 2 * 3.1415;
+        // Agent has hit boundary or target position is occupied, choose random agent angle and don't deposit trail
+        if (((newPosition.x - (float)width/2) * (newPosition.x - (float)width/2) + (newPosition.y - (float)height/2) * (newPosition.y - (float)height/2) > (float)width/2.25 * (float)width/2.25)
+             || newPositionOccupied)
+        {
+            random = pcgHash(random);
+            float randomAngle = scale(random) * 2 * 3.1415;
 
-        newPosition.x = clamp(newPosition.x, 0, width-1);
-        newPosition.y = clamp(newPosition.y, 0, height-1);
-
-        agents[id.x].angle = randomAngle;
+            agents[id.x].angle = randomAngle;
+        }
+        // No boundaries hit, deposit trail
+        else
+        {
+            trailMap[int2(newPosition)] = float4(trailMap[int2(newPosition)].xyz + trailDeposit, trailMap[int2(newPosition)].w);
+            agents[id.x].position = newPosition;
+        }
     }
-    // No boundaries hit, deposit trail
-    else
+    else // rectangular boundary
     {
-        trailMap[int2(newPosition)] = float4(trailMap[int2(newPosition)].xyz + trailDeposit, trailMap[int2(newPosition)].w);
+        // Agent has hit boundary or target position is occupied, choose random agent angle and don't deposit trail
+        if ((((newPosition.x < 0 || newPosition.x >= width || newPosition.y < 0 || newPosition.y >= height)) && !torus)
+                || newPositionOccupied)
+        {
+            random = pcgHash(random);
+            float randomAngle = scale(random) * 2 * 3.1415;
+
+            newPosition.x = clamp(newPosition.x, 0, width-1);
+            newPosition.y = clamp(newPosition.y, 0, height-1);
+
+            agents[id.x].angle = randomAngle;
+        }
+        // No boundaries hit, deposit trail
+        else
+        {
+            trailMap[int2(newPosition)] = float4(trailMap[int2(newPosition)].xyz + trailDeposit, trailMap[int2(newPosition)].w);
+            agents[id.x].position = newPosition;
+        }
     }
 
-    agents[id.x].position = newPosition;
 }
 
 
@@ -306,13 +350,18 @@ void ProcessTrailMap (uint3 id : SV_DispatchThreadID)
         return;
     }
 
+    if (staticTrailMap[id.xy].w != 0.0)
+    {
+        trailMap[id.xy] = float4(1.0, 1.0, 1.0, 0.0);
+    }
+
     float3 sum = 0;
     for (int x = -kernelHalfWidth; x <= kernelHalfWidth; x++)
     {
         for (int y = -kernelHalfWidth; y <= kernelHalfWidth; y++)
         {
-            int kernelX = wrap(id.x, width);
-            int kernelY = wrap(id.y, height);
+            int kernelX = wrap(id.x + x, width);
+            int kernelY = wrap(id.y + y, height);
             sum += trailMap[int2(kernelX, kernelY)].xyz;
         }
     }
@@ -336,11 +385,16 @@ void RefreshStaticValues (uint3 id : SV_DispatchThreadID)
         return;
     }
 
-    // Circular attractant region at the centre of the texture
-    if ((id.x - (float)width/2.0) * (id.x - (float)width/2) + (id.y - (float)height/2) * (id.y - (float)height/2) <= (float)width * 5)
-    {
-        // staticTrailMap[id.xy] = float4(0.5, 0.0, 0.0, 1.0);
-    }
+    // // Circular attractant region at the centre of the texture
+    // if ((id.x - (float)width/2.0) * (id.x - (float)width/2) + (id.y - (float)height/2) * (id.y - (float)height/2) <= (float)width * 5)
+    // {
+    //     staticTrailMap[id.xy] = float4(0.5, 0.0, 0.0, 1.0);
+    // }
+
+    // if (staticTrailMap[id.xy].w != 0.0)
+    // {
+    //     processedTrailMap[id.xy] = float4(1.0, 1.0, 1.0, 0.0);
+    // }
 }
 
 #pragma kernel StaticOverlay
@@ -354,7 +408,10 @@ void StaticOverlay (uint3 id : SV_DispatchThreadID)
         return;
     }
 
-    processedTrailMap[id.xy] += staticTrailMap[id.xy];
+    if (staticTrailMap[id.xy].w != 0.0)
+    {
+        processedTrailMap[id.xy] = staticTrailMap[id.xy] *  2.0;
+    }
 }
 
 #pragma kernel DrawStaticTrail
@@ -375,7 +432,7 @@ void DrawStaticTrail (uint3 id : SV_DispatchThreadID)
     }
     else if (brushType == 1) // repellent
     {
-        color = float4(0.0, 0.0, 0.5, 0.0);
+        color = float4(0.0, 0.0, 0.5, 0.5);
     }
     else if (brushType == 2) // eraser
     {
@@ -386,9 +443,12 @@ void DrawStaticTrail (uint3 id : SV_DispatchThreadID)
     {
         for (int y = -brushHalfWidth; y <= brushHalfWidth; y++)
         {
-            int kernelX = wrap(mouseX + x, width);
-            int kernelY = wrap(mouseY + y, height);
-            staticTrailMap[int2(kernelX, kernelY)] = color;
+            if (x*x + y*y <= brushHalfWidth*brushHalfWidth)
+            {
+                int kernelX = wrap(mouseX + x, width);
+                int kernelY = wrap(mouseY + y, height);
+                staticTrailMap[int2(kernelX, kernelY)] = color;
+            }
         }
     }
 }

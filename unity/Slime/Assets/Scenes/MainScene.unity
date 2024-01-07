@@ -168,13 +168,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   algorithmComputeShader: {fileID: 7200000, guid: 5cd4523539f6f0b47ae537461922756a, type: 3}
-  width: 500
-  height: 500
+  width: 200
+  height: 200
   bufferMaxAgentCount: 1
-  agentCount: 1
+  agentCount: 800
   moveSpeed: 1
   algorithmStepsPerFrame: 2
-  agentRotationAngle: 22.5
+  agentRotationAngle: 45
   sensorOffset: 9
   sensorAngle: 45
   decay: 1
@@ -182,10 +182,11 @@ MonoBehaviour:
   decayRate: 0.01
   diffuseRate: 0.01
   kernelHalfWidth: 1
-  trailDeposit: 300
-  staticTrailStrength: 0.5
-  agentCollision: 0
-  torus: 1
+  trailDeposit: 1
+  staticTrailStrength: 0.002
+  circularDomain: 1
+  agentCollision: 1
+  torus: 0
   staticTrails: 1
   staticOverlay: 1
   brushHalfWidth: 5
