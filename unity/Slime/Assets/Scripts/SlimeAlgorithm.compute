@@ -76,11 +76,24 @@ float checkSensor(Agent agent, float sensorDeltaAngle)
         // Formula: f(x) = 6x^2 - 5x. Attractant: x=1, repellent: x=0.5. Then, f(attractant) = +1, f(repellent) = -1, f(0) = 0.
         return dot(trailMap[int2(sensorCoordX, sensorCoordY)].xyz, int3(1, 1, 1))
             + ((staticTrailMap[int2(sensorCoordX, sensorCoordY)].w * staticTrailMap[int2(sensorCoordX, sensorCoordY)].w * 6) - 5 * staticTrailMap[int2(sensorCoordX, sensorCoordY)].w) * staticTrailStrength
-            + ((trailMap[int2(sensorCoordX, sensorCoordY)].w * trailMap[int2(sensorCoordX, sensorCoordY)].w * 6) - 5 * trailMap[int2(sensorCoordX, sensorCoordY)].w) * staticTrailStrength;
+            + 3 * ((trailMap[int2(sensorCoordX, sensorCoordY)].w * trailMap[int2(sensorCoordX, sensorCoordY)].w * 6) - 5 * trailMap[int2(sensorCoordX, sensorCoordY)].w) * staticTrailStrength;
     }
     else
     {
         return dot(trailMap[int2(sensorCoordX, sensorCoordY)].xyz, int3(1, 1, 1));
+    }
+}
+
+// Checks if two numbers are approximately equal, up to epsilon = 0.01.
+bool approx(float value, float target)
+{
+    if (abs(value - target) < 0.01)
+    {
+        return true;
+    }
+    else
+    {
+        return false;
     }
 }
 
@@ -190,7 +203,7 @@ void AlgorithmStep (uint3 id : SV_DispatchThreadID)
              * to deposit a trail as that's a false positive for the surrounding agents. Instead, we treat
              * it's destination position as being taken and later on randomly orient the agent.
              */
-            newPositionOccupied = true;
+            // newPositionOccupied = true;
         }
         // Left and front trail values are negative: rotate right twice as much.
         else if (leftTrailValue < 0 && frontTrailValue < 0)
@@ -288,6 +301,11 @@ void AlgorithmStep (uint3 id : SV_DispatchThreadID)
             {
                 newPositionOccupied = true;
             }
+            
+            if (!approx(staticTrailMap[int2(newPosition)].w, 0.0))
+            {
+                newPositionOccupied = true;
+            }
         }
     }
 
@@ -335,18 +353,6 @@ void AlgorithmStep (uint3 id : SV_DispatchThreadID)
 
 #pragma kernel ProcessTrailMap
 
-bool approx(float value, float target)
-{
-    if (abs(value - target) < 0.01)
-    {
-        return true;
-    }
-    else
-    {
-        return false;
-    }
-}
-
 RWTexture2D<float4> processedTrailMap; // texture for trail map post-processing
 float decayRate;
 float diffuseRate;
@@ -366,9 +372,17 @@ void ProcessTrailMap (uint3 id : SV_DispatchThreadID)
     {
         trailMap[id.xy] = float4(1.0, 1.0, 1.0, 0.0);
     }
-    else if (approx(staticTrailMap[id.xy].w, 0.5))
+    
+    // Deposit repellent from static trail map.
+    if (approx(staticTrailMap[id.xy].w, 0.5))
     {
-        trailMap[id.xy] = float4(0.0, 0.0, 0.0, 0.5);
+        trailMap[id.xy] = float4(trailMap[id.xy].xyz, 0.5);
+    }
+    
+    // Clear static trail map.   
+    if (approx(staticTrailMap[id.xy].w, 0.0))
+    {
+        trailMap[id.xy] = float4(trailMap[id.xy].xyz, 0.0);
     }
 
     float3 sum = 0;
