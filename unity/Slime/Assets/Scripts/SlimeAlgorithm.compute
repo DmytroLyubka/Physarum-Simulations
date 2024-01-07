@@ -73,8 +73,10 @@ float checkSensor(Agent agent, float sensorDeltaAngle)
     // Return equally weighted sum of RGB channels for sensor's pixel in both the dynamic and static trail maps
     if (staticTrails)
     {
+        // Formula: f(x) = 6x^2 - 5x. Attractant: x=1, repellent: x=0.5. Then, f(attractant) = +1, f(repellent) = -1, f(0) = 0.
         return dot(trailMap[int2(sensorCoordX, sensorCoordY)].xyz, int3(1, 1, 1))
-            + ((staticTrailMap[int2(sensorCoordX, sensorCoordY)].w * staticTrailMap[int2(sensorCoordX, sensorCoordY)].w * 6) - 5 * staticTrailMap[int2(sensorCoordX, sensorCoordY)].w) * staticTrailStrength;
+            + ((staticTrailMap[int2(sensorCoordX, sensorCoordY)].w * staticTrailMap[int2(sensorCoordX, sensorCoordY)].w * 6) - 5 * staticTrailMap[int2(sensorCoordX, sensorCoordY)].w) * staticTrailStrength
+            + ((trailMap[int2(sensorCoordX, sensorCoordY)].w * trailMap[int2(sensorCoordX, sensorCoordY)].w * 6) - 5 * trailMap[int2(sensorCoordX, sensorCoordY)].w) * staticTrailStrength;
     }
     else
     {
@@ -172,9 +174,7 @@ void AlgorithmStep (uint3 id : SV_DispatchThreadID)
         }
         else
         {
-            /* All sensor trail values are equal - maybe have random choice of rotation direction
-                * here?
-                */
+            // All sensor trail values are equal.
             // pass
         }
     }
@@ -330,11 +330,22 @@ void AlgorithmStep (uint3 id : SV_DispatchThreadID)
             agents[id.x].position = newPosition;
         }
     }
-
 }
 
 
 #pragma kernel ProcessTrailMap
+
+bool approx(float value, float target)
+{
+    if (abs(value - target) < 0.01)
+    {
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
 
 RWTexture2D<float4> processedTrailMap; // texture for trail map post-processing
 float decayRate;
@@ -350,9 +361,14 @@ void ProcessTrailMap (uint3 id : SV_DispatchThreadID)
         return;
     }
 
-    if (staticTrailMap[id.xy].w != 0.0)
+    // Deposit attractant from static trail map.
+    if (approx(staticTrailMap[id.xy].w, 1.0))
     {
         trailMap[id.xy] = float4(1.0, 1.0, 1.0, 0.0);
+    }
+    else if (approx(staticTrailMap[id.xy].w, 0.5))
+    {
+        trailMap[id.xy] = float4(0.0, 0.0, 0.0, 0.5);
     }
 
     float3 sum = 0;
@@ -389,11 +405,6 @@ void RefreshStaticValues (uint3 id : SV_DispatchThreadID)
     // if ((id.x - (float)width/2.0) * (id.x - (float)width/2) + (id.y - (float)height/2) * (id.y - (float)height/2) <= (float)width * 5)
     // {
     //     staticTrailMap[id.xy] = float4(0.5, 0.0, 0.0, 1.0);
-    // }
-
-    // if (staticTrailMap[id.xy].w != 0.0)
-    // {
-    //     processedTrailMap[id.xy] = float4(1.0, 1.0, 1.0, 0.0);
     // }
 }
 
