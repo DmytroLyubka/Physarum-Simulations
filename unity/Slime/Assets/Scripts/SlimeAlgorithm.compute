@@ -444,6 +444,8 @@ void ProcessTrailMap (uint3 id : SV_DispatchThreadID)
 
 #pragma kernel RefreshChemicalValues
 
+bool voronoiEnvironment; // toggles Voronoi environment
+
 // Sets hardcoded chemical source map values.
 [numthreads(8,8,1)]
 void RefreshChemicalValues (uint3 id : SV_DispatchThreadID)
@@ -456,7 +458,14 @@ void RefreshChemicalValues (uint3 id : SV_DispatchThreadID)
     // Attractant placed around circular domain - needed for Voronoi cells
     if ((id.x - (float)width/2.0) * (id.x - (float)width/2) + (id.y - (float)height/2) * (id.y - (float)height/2) > (float)width/2.25 * (float)width/2.25)
     {
-        chemicalSourceMap[id.xy] = float4(0.5, 0.0, 0.0, 1.0);
+        if (voronoiEnvironment)
+        {
+            chemicalSourceMap[id.xy] = float4(0.5, 0.0, 0.0, 1.0);
+        }
+        else
+        {
+            chemicalSourceMap[id.xy] = float4(0.0, 0.0, 0.0, 0.5);
+        }
     }
 }
 

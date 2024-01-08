@@ -141,6 +141,11 @@ public class SlimeAlgorithm : MonoBehaviour
 	/// Identifies canvas edges to form a virtual torus
 	/// </summary>
 	public bool torus;
+	
+	/// <summary>
+	/// Surrounds circular domain with attractant chemical if enabled.
+	/// </summary>
+	public bool voronoiEnvironment;
 
 	/// <summary>
 	/// Enable chemical source overlay.
@@ -297,6 +302,7 @@ public class SlimeAlgorithm : MonoBehaviour
 		algorithmComputeShader.SetBool("circularDomain", circularDomain);
 		algorithmComputeShader.SetBool("agentCollision", agentCollision);
 		algorithmComputeShader.SetBool("torus", torus);
+		algorithmComputeShader.SetBool("voronoiEnvironment", voronoiEnvironment);
 		algorithmComputeShader.SetBool("chemicalSourceOverlay", chemicalSourceOverlay);
 		algorithmComputeShader.SetInt("brushHalfWidth", brushHalfWidth);
 		algorithmComputeShader.SetFloat("mouseX", mouseX);
