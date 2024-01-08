@@ -127,11 +127,6 @@ public class SlimeAlgorithm : MonoBehaviour
 	public bool torus;
 
 	/// <summary>
-	/// Enable static trails.
-	/// </summary>
-	public bool staticTrails;
-
-	/// <summary>
 	/// Enable static trails overlay.
 	/// </summary>
 	public bool staticOverlay;
@@ -263,7 +258,6 @@ public class SlimeAlgorithm : MonoBehaviour
 		algorithmComputeShader.SetBool("circularDomain", circularDomain);
 		algorithmComputeShader.SetBool("agentCollision", agentCollision);
 		algorithmComputeShader.SetBool("torus", torus);
-		algorithmComputeShader.SetBool("staticTrails", staticTrails);
 		algorithmComputeShader.SetBool("staticOverlay", staticOverlay);
 		algorithmComputeShader.SetInt("brushHalfWidth", brushHalfWidth);
 		algorithmComputeShader.SetFloat("mouseX", mouseX);

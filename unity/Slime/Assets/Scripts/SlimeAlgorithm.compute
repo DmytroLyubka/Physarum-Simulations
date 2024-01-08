@@ -21,7 +21,6 @@ float time; // total time passed since start of simulation
 float trailDeposit; // trail value agents deposit
 bool agentCollision; // agent collision toggle
 bool torus; // torus surface toggle
-bool staticTrails; // toggle static trails
 float staticTrailStrength; // strength of static trails
 bool circularDomain; // toggles circular agent domain
 
@@ -70,18 +69,10 @@ float checkSensor(Agent agent, float sensorDeltaAngle)
     int sensorCoordX = wrap(sensorPosition.x, width);
     int sensorCoordY = wrap(sensorPosition.y, height);
 
-    // Return equally weighted sum of RGB channels for sensor's pixel in both the dynamic and static trail maps
-    if (staticTrails)
-    {
-        // Formula: f(x) = 6x^2 - 5x. Attractant: x=1, repellent: x=0.5. Then, f(attractant) = +1, f(repellent) = -1, f(0) = 0.
-        return dot(trailMap[int2(sensorCoordX, sensorCoordY)].xyz, int3(1, 1, 1))
-            + ((staticTrailMap[int2(sensorCoordX, sensorCoordY)].w * staticTrailMap[int2(sensorCoordX, sensorCoordY)].w * 6) - 5 * staticTrailMap[int2(sensorCoordX, sensorCoordY)].w) * staticTrailStrength
-            + 3 * ((trailMap[int2(sensorCoordX, sensorCoordY)].w * trailMap[int2(sensorCoordX, sensorCoordY)].w * 6) - 5 * trailMap[int2(sensorCoordX, sensorCoordY)].w) * staticTrailStrength;
-    }
-    else
-    {
-        return dot(trailMap[int2(sensorCoordX, sensorCoordY)].xyz, int3(1, 1, 1));
-    }
+    // Formula: f(x) = 6x^2 - 5x. Attractant: x=1, repellent: x=0.5. Then, f(attractant) = +1, f(repellent) = -1, f(0) = 0.
+    return dot(trailMap[int2(sensorCoordX, sensorCoordY)].xyz, int3(1, 1, 1))
+        + ((staticTrailMap[int2(sensorCoordX, sensorCoordY)].w * staticTrailMap[int2(sensorCoordX, sensorCoordY)].w * 6) - 5 * staticTrailMap[int2(sensorCoordX, sensorCoordY)].w) * staticTrailStrength
+        + 3 * ((trailMap[int2(sensorCoordX, sensorCoordY)].w * trailMap[int2(sensorCoordX, sensorCoordY)].w * 6) - 5 * trailMap[int2(sensorCoordX, sensorCoordY)].w) * staticTrailStrength; // <- ?
 }
 
 // Checks if two numbers are approximately equal, up to epsilon = 0.01.
