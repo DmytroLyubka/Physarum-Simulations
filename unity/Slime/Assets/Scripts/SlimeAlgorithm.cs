@@ -15,9 +15,19 @@ public class SlimeAlgorithm : MonoBehaviour
 	private RenderTexture processedTrailMap;
 	
 	/// <summary>
-	/// Stores static attracting/repelling trails.
+	/// Stores chemical sources.
 	/// </summary>
-	private RenderTexture staticTrailMap;
+	private RenderTexture chemicalSourceMap;
+	
+	/// <summary>
+	/// Stores attractant/repellent chemicals.
+	/// </summary>
+	private RenderTexture chemicalMap;
+	
+	/// <summary>
+	/// Stores processed (decayed, diffused, etc.) chemical map values over time.
+	/// </summary>
+	private RenderTexture processedChemicalMap;
 	
 	/// <summary>
 	/// Holds agent objects to be used by compute shaders.
@@ -106,9 +116,15 @@ public class SlimeAlgorithm : MonoBehaviour
 	[Range(0, 1)] public float trailDeposit;
 	
 	/// <summary>
-	/// Strength of static trails.
+	/// Strength of chemicals compared to agent trails.
 	/// </summary>
-	[Min(0)] public float staticTrailStrength;
+	[Min(0)] public float chemicalDominance;
+	
+	/// <summary>
+	/// Multiplicative repelling factor applied to agents that meet repellent to increase their displacement.
+	/// </summary>
+	[Range(1, 30)] public float repellentStrength;
+	
 
 	[Header("General Settings")]
 	/// <summary>
@@ -127,12 +143,12 @@ public class SlimeAlgorithm : MonoBehaviour
 	public bool torus;
 
 	/// <summary>
-	/// Enable static trails overlay.
+	/// Enable chemical source overlay.
 	/// </summary>
-	public bool staticOverlay;
+	public bool chemicalSourceOverlay;
 	
 	/// <summary>
-	/// Width of brush used for static trail map drawing = 1 + 2 * brushHalfWidth.
+	/// Width of brush used for chemical source drawing = 1 + 2 * brushHalfWidth.
 	/// </summary>
 	public int brushHalfWidth;
 	
@@ -147,13 +163,13 @@ public class SlimeAlgorithm : MonoBehaviour
 	private float mouseY;
 	
 	/// <summary>
-	/// Defines static trail brush tooltip type to be passed onto compute shader.
+	/// Defines chemical brush tooltip type to be passed onto compute shader.
 	/// 0: attractant, 1: repellent, 2: eraser.
 	/// </summary>
 	private int brushType;
 	
 	/// <summary>
-	/// Tracks static trail eraser status.
+	/// Tracks chemical eraser status.
 	/// </summary>
 	private bool erase;
 	
@@ -178,25 +194,45 @@ public class SlimeAlgorithm : MonoBehaviour
 		};
 		processedTrailMap.Create();
 		
-		// Create static trail map
-		staticTrailMap = new RenderTexture(width, height, 0) 
+		chemicalSourceMap = new RenderTexture(width, height, 0)
+		{
+			enableRandomWrite = true,
+			filterMode = FilterMode.Bilinear			
+		};
+		
+		// Create chemical map
+		chemicalMap = new RenderTexture(width, height, 0) 
 		{
 			enableRandomWrite = true,
 			filterMode = FilterMode.Bilinear
 		};
-		staticTrailMap.Create();
+		chemicalMap.Create();
+		
+		// Create processed chemical map
+		processedChemicalMap = new RenderTexture(width, height, 0)
+		{
+			enableRandomWrite = true,
+			filterMode = FilterMode.Bilinear			
+		};
+		processedChemicalMap.Create();
 		
 		// Assign textures in compute shader
-		algorithmComputeShader.SetTexture(0, "trailMap", trailMap);
-		algorithmComputeShader.SetTexture(0, "staticTrailMap", staticTrailMap);
-		algorithmComputeShader.SetTexture(1, "trailMap", trailMap);
+		algorithmComputeShader.SetTexture(0, "trailMap", trailMap); // AlgorithmStep
+		algorithmComputeShader.SetTexture(0, "chemicalMap", chemicalMap);
+		algorithmComputeShader.SetTexture(0, "chemicalSourceMap", chemicalSourceMap);
+		algorithmComputeShader.SetTexture(1, "trailMap", trailMap); // ProcessTrailMap
 		algorithmComputeShader.SetTexture(1, "processedTrailMap", processedTrailMap);
-		algorithmComputeShader.SetTexture(1, "staticTrailMap", staticTrailMap);
-		algorithmComputeShader.SetTexture(2, "staticTrailMap", staticTrailMap);
+		algorithmComputeShader.SetTexture(1, "chemicalMap", chemicalMap);
+		algorithmComputeShader.SetTexture(1, "processedChemicalMap", processedChemicalMap);
+		algorithmComputeShader.SetTexture(1, "chemicalSourceMap", chemicalSourceMap);
+		algorithmComputeShader.SetTexture(2, "chemicalSourceMap", chemicalSourceMap); // RefreshChemicalValues
 		algorithmComputeShader.SetTexture(2, "processedTrailMap", processedTrailMap);
-		algorithmComputeShader.SetTexture(3, "processedTrailMap", processedTrailMap);
-		algorithmComputeShader.SetTexture(3, "staticTrailMap", staticTrailMap);
-		algorithmComputeShader.SetTexture(4, "staticTrailMap", staticTrailMap);
+		algorithmComputeShader.SetTexture(3, "processedTrailMap", processedTrailMap); // ChemicalSourceOverlay
+		algorithmComputeShader.SetTexture(3, "chemicalSourceMap", chemicalSourceMap);
+		algorithmComputeShader.SetTexture(4, "chemicalSourceMap", chemicalSourceMap); // DrawChemical
+		algorithmComputeShader.SetTexture(5, "chemicalSourceMap", chemicalSourceMap); // InitializeChemicalMaps
+		algorithmComputeShader.SetTexture(5, "chemicalMap", chemicalMap);
+		algorithmComputeShader.SetTexture(5, "processedChemicalMap", processedChemicalMap);
 		
 		// Create agents with random position and angles
 		Agent[] agents = new Agent[bufferMaxAgentCount ? 65535 : agentCount];
@@ -235,6 +271,9 @@ public class SlimeAlgorithm : MonoBehaviour
 
 		// Set initial parameters in compute shader
 		UpdateSettings();
+		
+		// Initialize chemical maps
+		Dispatch(algorithmComputeShader, width, height, 1, kernelIndex: 5); // InitializeChemicalMaps
 	}
 
 	/// <summary>
@@ -254,15 +293,16 @@ public class SlimeAlgorithm : MonoBehaviour
 		algorithmComputeShader.SetFloat("diffuseRate", diffuse ? diffuseRate : 0);
 		algorithmComputeShader.SetInt("kernelHalfWidth", kernelHalfWidth);
 		algorithmComputeShader.SetFloat("trailDeposit", trailDeposit);
-		algorithmComputeShader.SetFloat("staticTrailStrength", staticTrailStrength);
+		algorithmComputeShader.SetFloat("chemicalDominance", chemicalDominance);
 		algorithmComputeShader.SetBool("circularDomain", circularDomain);
 		algorithmComputeShader.SetBool("agentCollision", agentCollision);
 		algorithmComputeShader.SetBool("torus", torus);
-		algorithmComputeShader.SetBool("staticOverlay", staticOverlay);
+		algorithmComputeShader.SetBool("chemicalSourceOverlay", chemicalSourceOverlay);
 		algorithmComputeShader.SetInt("brushHalfWidth", brushHalfWidth);
 		algorithmComputeShader.SetFloat("mouseX", mouseX);
 		algorithmComputeShader.SetFloat("mouseY", mouseY);
 		algorithmComputeShader.SetInt("brushType", brushType);
+		algorithmComputeShader.SetFloat("repellentStrength", repellentStrength);
 	}
 
 	/// <summary>
@@ -272,11 +312,12 @@ public class SlimeAlgorithm : MonoBehaviour
 	{
 		Dispatch(algorithmComputeShader, agentCount, 1, 1, kernelIndex: 0); // AlgorithmStep
 		Dispatch(algorithmComputeShader, width, height, 1, kernelIndex: 1); // ProcessTrailMap
-		Dispatch(algorithmComputeShader, width, height, 1, kernelIndex: 2); // RefreshStaticValues
+		Dispatch(algorithmComputeShader, width, height, 1, kernelIndex: 2); // RefreshChemicalValues
 		Graphics.Blit(processedTrailMap, trailMap);
-		if (staticOverlay)
+		Graphics.Blit(processedChemicalMap, chemicalMap);
+		if (chemicalSourceOverlay)
 		{
-			Dispatch(algorithmComputeShader, width, height, 1, kernelIndex: 3); // StaticOverlay
+			Dispatch(algorithmComputeShader, width, height, 1, kernelIndex: 3); // ChemicalSourceOverlay
 		}
 	}
 
@@ -318,8 +359,7 @@ public class SlimeAlgorithm : MonoBehaviour
 					brushType = 0;
 					algorithmComputeShader.SetInt("brushType", brushType);
 				}
-				// Debug.Log($"({texturePosition.x}, {texturePosition.y})");
-				Dispatch(algorithmComputeShader, 1, 1, 1, kernelIndex: 4); // DrawStaticTrail
+				Dispatch(algorithmComputeShader, 1, 1, 1, kernelIndex: 4); // DrawChemical
 			}
 		}
 		else if (Input.GetMouseButton(1)) 
@@ -331,8 +371,7 @@ public class SlimeAlgorithm : MonoBehaviour
 					brushType = 1;
 					algorithmComputeShader.SetInt("brushType", brushType);
 				}
-				// Debug.Log($"({texturePosition.x}, {texturePosition.y})");
-				Dispatch(algorithmComputeShader, 1, 1, 1, kernelIndex: 4); // DrawStaticTrail
+				Dispatch(algorithmComputeShader, 1, 1, 1, kernelIndex: 4); // DrawChemical
 			}
 		}
 		else if (Input.GetMouseButtonDown(2))

@@ -9,7 +9,8 @@ struct Agent
 
 RWStructuredBuffer<Agent> agents; // contains agent structures
 RWTexture2D<float4> trailMap; // tracks agent positions over time
-RWTexture2D<float4> staticTrailMap; // tracks static trails
+RWTexture2D<float4> chemicalSourceMap; // texture for chemical sources
+RWTexture2D<float4> chemicalMap; // tracks chemicals
 uint agentCount; // number of agents in simulation
 int width; // texture width
 int height; // texture height
@@ -21,8 +22,9 @@ float time; // total time passed since start of simulation
 float trailDeposit; // trail value agents deposit
 bool agentCollision; // agent collision toggle
 bool torus; // torus surface toggle
-float staticTrailStrength; // strength of static trails
+float chemicalDominance; // strength of chemicals compared to agent trails
 bool circularDomain; // toggles circular agent domain
+float repellentStrength; // strength of repellent
 
 // Computes a random 32-bit uint in the range 0 to 4294967295.
 uint pcgHash(uint input)
@@ -69,13 +71,14 @@ float checkSensor(Agent agent, float sensorDeltaAngle)
     int sensorCoordX = wrap(sensorPosition.x, width);
     int sensorCoordY = wrap(sensorPosition.y, height);
 
-    // Formula: f(x) = 6x^2 - 5x. Attractant: x=1, repellent: x=0.5. Then, f(attractant) = +1, f(repellent) = -1, f(0) = 0.
+    // Formula: f(x) = (x-0.5) * 2. Attractant = 1, repellent = 0, nothing = 0.5. Then, f(repellent) = -1, f(attractant) = +1, f(nothing) = 0
     return dot(trailMap[int2(sensorCoordX, sensorCoordY)].xyz, int3(1, 1, 1))
-        + ((staticTrailMap[int2(sensorCoordX, sensorCoordY)].w * staticTrailMap[int2(sensorCoordX, sensorCoordY)].w * 6) - 5 * staticTrailMap[int2(sensorCoordX, sensorCoordY)].w) * staticTrailStrength
-        + 3 * ((trailMap[int2(sensorCoordX, sensorCoordY)].w * trailMap[int2(sensorCoordX, sensorCoordY)].w * 6) - 5 * trailMap[int2(sensorCoordX, sensorCoordY)].w) * staticTrailStrength; // <- ?
+        + dot(chemicalMap[int2(sensorCoordX, sensorCoordY)].xyz, int3(1, 1, 1)) * (chemicalMap[int2(sensorCoordX, sensorCoordY)].w - 0.5) * 2 * chemicalDominance;
 }
 
-// Checks if two numbers are approximately equal, up to epsilon = 0.01.
+// Checks if two numbers are approximately equal, up to epsilon = 0.01. Using equality doesn't seem to work very well...
+// Maybe due to the RenderTexture color format that we have? Using a "bigger" format (more bits per channel) might solve
+// the equality issue.
 bool approx(float value, float target)
 {
     if (abs(value - target) < 0.01)
@@ -108,6 +111,7 @@ void AlgorithmStep (uint3 id : SV_DispatchThreadID)
     float rightTrailValue = checkSensor(agent, -sensorAngle);
 
     bool newPositionOccupied = false;
+    bool repellentFound = false;
 
     // All trail values are positive (no repellents found), algorithm step matches Jones's
     if (frontTrailValue >= 0 && leftTrailValue >= 0 && rightTrailValue >= 0)
@@ -182,9 +186,13 @@ void AlgorithmStep (uint3 id : SV_DispatchThreadID)
             // pass
         }
     }
-    // One of the sensors found a repellent: custom algorithm for deciding on rotation direction + magnitude.
+    /* One of the sensors found a repellent: CUSTOM ALGORITHM for deciding on rotation direction + magnitude.
+     * If we find a paper that details a repellent algorithm then we should test it out. Meanwhile, we need
+     * to implement our own.
+     */
     else
     {
+        repellentFound = true;
         /* All trail values are negative, randomly rotate. We could maybe make this more deterministic
          * and rotate in the direction of the largest trail value?
          */
@@ -194,7 +202,7 @@ void AlgorithmStep (uint3 id : SV_DispatchThreadID)
              * to deposit a trail as that's a false positive for the surrounding agents. Instead, we treat
              * it's destination position as being taken and later on randomly orient the agent.
              */
-            // newPositionOccupied = true;
+            newPositionOccupied = true;
         }
         // Left and front trail values are negative: rotate right twice as much.
         else if (leftTrailValue < 0 && frontTrailValue < 0)
@@ -266,16 +274,28 @@ void AlgorithmStep (uint3 id : SV_DispatchThreadID)
             {
                 agents[id.x].angle += 2 * agentRotationAngle;
             }
-            else
+            else if (rightTrailValue > leftTrailValue)
             {
                 agents[id.x].angle -= 2 * agentRotationAngle;
+            }
+            else
+            {
+                // Left and right trail values are equal: randomly rotate left or right twice.
+                if (scale(random) > 0.5)
+                {
+                    agents[id.x].angle += 2 * agentRotationAngle;
+                }
+                else
+                {
+                    agents[id.x].angle -= 2 * agentRotationAngle;
+                }
             }
         }
     }
 
-    // Update position
-    float2 direction = float2(cos(agent.angle), sin(agent.angle));
-    float2 newPosition = agent.position + direction * moveSpeed;
+    // Update position. If a repellent is found, increase the distance that the agent jumps.
+    float2 direction = float2(cos(agents[id.x].angle), sin(agents[id.x].angle));
+    float2 newPosition = agent.position + direction * moveSpeed * (repellentFound ? repellentStrength : 1.0);
 
     if (torus)
     {
@@ -288,12 +308,14 @@ void AlgorithmStep (uint3 id : SV_DispatchThreadID)
     {
         for (uint i = 0; i < agentCount; i++)
         {
+            // Collision with agents
             if (all(agents[i].position == newPosition))
             {
                 newPositionOccupied = true;
             }
             
-            if (!approx(staticTrailMap[int2(newPosition)].w, 0.0))
+            // Collision with attractant chemical
+            if (approx(chemicalSourceMap[int2(newPosition)].w, 1.0))
             {
                 newPositionOccupied = true;
             }
@@ -345,6 +367,7 @@ void AlgorithmStep (uint3 id : SV_DispatchThreadID)
 #pragma kernel ProcessTrailMap
 
 RWTexture2D<float4> processedTrailMap; // texture for trail map post-processing
+RWTexture2D<float4> processedChemicalMap; // texture for chemical map post-processing
 float decayRate;
 float diffuseRate;
 int kernelHalfWidth;
@@ -358,88 +381,115 @@ void ProcessTrailMap (uint3 id : SV_DispatchThreadID)
         return;
     }
 
-    // Deposit attractant from static trail map.
-    if (approx(staticTrailMap[id.xy].w, 1.0))
+
+    // Deposit chemicals from chemical source map onto chemical map
+    if (approx(chemicalSourceMap[id.xy].w, 1.0)) // attractant
     {
-        trailMap[id.xy] = float4(1.0, 1.0, 1.0, 0.0);
+        chemicalMap[id.xy] = float4(1.0, 1.0, 1.0, 1.0);
     }
     
-    // Deposit repellent from static trail map.
-    if (approx(staticTrailMap[id.xy].w, 0.5))
+    if (approx(chemicalSourceMap[id.xy].w, 0.0)) // repellent
     {
-        trailMap[id.xy] = float4(trailMap[id.xy].xyz, 0.5);
+        chemicalMap[id.xy] = float4(1.0, 1.0, 1.0, 0.0);
     }
     
-    // Clear static trail map.   
-    if (approx(staticTrailMap[id.xy].w, 0.0))
+    if (approx(chemicalSourceMap[id.xy].w, 0.5)) // no chemical
     {
-        trailMap[id.xy] = float4(trailMap[id.xy].xyz, 0.0);
+        chemicalMap[id.xy] = float4(0.0, 0.0, 0.0, 0.5);
     }
 
-    float3 sum = 0;
+    // Trail map processing
+    float3 trailSum = 0;
     for (int x = -kernelHalfWidth; x <= kernelHalfWidth; x++)
     {
         for (int y = -kernelHalfWidth; y <= kernelHalfWidth; y++)
         {
             int kernelX = wrap(id.x + x, width);
             int kernelY = wrap(id.y + y, height);
-            sum += trailMap[int2(kernelX, kernelY)].xyz;
+            trailSum += trailMap[int2(kernelX, kernelY)].xyz;
         }
     }
 
-    float3 diffusedTrail = sum / ((1 + 2 * kernelHalfWidth)*(1 + 2 * kernelHalfWidth));
+    float3 diffusedTrail = trailSum / ((1 + 2 * kernelHalfWidth) * (1 + 2 * kernelHalfWidth));
 
     // Weighted average between original and diffused trail values
     float3 weightedDiffusedTrail = (1 - diffuseRate) * trailMap[id.xy].xyz + diffuseRate * diffusedTrail;
 
     processedTrailMap[id.xy] = float4(max(0, weightedDiffusedTrail - decayRate), trailMap[id.xy].w);
+
+    // --------------------------------------------------------------------------------------------------------
+
+    /* Chemical map processing. Note that unlike the trail map, we are diffusing and decaying
+     * and diffusing the alpha channel as well. This is to ensure that varying chemical gradients
+     * are possible.
+     */
+    float4 chemicalSum = 0;
+    for (x = -kernelHalfWidth; x <= kernelHalfWidth; x++)
+    {
+        for (int y = -kernelHalfWidth; y <= kernelHalfWidth; y++)
+        {
+            int kernelX = wrap(id.x + x, width);
+            int kernelY = wrap(id.y + y, height);
+            chemicalSum += chemicalMap[int2(kernelX, kernelY)];
+        }
+    }
+
+    float4 diffusedChemical = chemicalSum / ((1 + 2 * kernelHalfWidth) * (1 + 2 * kernelHalfWidth));
+
+    // Weighted average between original and diffused trail values
+    float4 weightedDiffusedChemical = (1 - diffuseRate) * chemicalMap[id.xy] + diffuseRate * diffusedChemical;
+
+    processedChemicalMap[id.xy] = max(0, weightedDiffusedChemical - decayRate);
 }
 
-#pragma kernel RefreshStaticValues
+#pragma kernel RefreshChemicalValues
 
-// Sets hardcoded static trail map values.
+// Sets hardcoded chemical source map values.
 [numthreads(8,8,1)]
-void RefreshStaticValues (uint3 id : SV_DispatchThreadID)
+void RefreshChemicalValues (uint3 id : SV_DispatchThreadID)
 {
     if (id.x < 0 || id.x >= (uint)width || id.y < 0 || id.y >= (uint)height)
     {
         return;
     }
 
-    // // Circular attractant region at the centre of the texture
-    // if ((id.x - (float)width/2.0) * (id.x - (float)width/2) + (id.y - (float)height/2) * (id.y - (float)height/2) <= (float)width * 5)
-    // {
-    //     staticTrailMap[id.xy] = float4(0.5, 0.0, 0.0, 1.0);
-    // }
+    // Attractant placed around circular domain - needed for Voronoi cells
+    if ((id.x - (float)width/2.0) * (id.x - (float)width/2) + (id.y - (float)height/2) * (id.y - (float)height/2) > (float)width/2.25 * (float)width/2.25)
+    {
+        chemicalSourceMap[id.xy] = float4(0.5, 0.0, 0.0, 1.0);
+    }
 }
 
-#pragma kernel StaticOverlay
+#pragma kernel ChemicalSourceOverlay
 
-// Overlays static trail map image onto output texture.
+/* Overlays chemical source map image onto output texture. Purely a visual effect. Very helpful
+ * during testing, but it doesn't look very good. We'll need to improve this later to get
+ * cleaner, more visually appealing outputs.
+ */
 [numthreads(8,8,1)]
-void StaticOverlay (uint3 id : SV_DispatchThreadID)
+void ChemicalSourceOverlay (uint3 id : SV_DispatchThreadID)
 {
     if (id.x < 0 || id.x >= (uint)width || id.y < 0 || id.y >= (uint)height)
     {
         return;
     }
 
-    if (staticTrailMap[id.xy].w != 0.0)
+    if (!approx(chemicalSourceMap[id.xy].w, 0.5))
     {
-        processedTrailMap[id.xy] = staticTrailMap[id.xy] *  2.0;
+        processedTrailMap[id.xy] = chemicalSourceMap[id.xy] * 2.0;
     }
 }
 
-#pragma kernel DrawStaticTrail
+#pragma kernel DrawChemical
 
 float mouseX; // mouse x-coordinate
 float mouseY; // mouse y-coordinate
 int brushType; // 0: attractant, 1: repellent, 2: eraser
 int brushHalfWidth; // half-width of brush tooltip
 
-// Draw attractant on trail map.
+// Draw chemical onto chemical map.
 [numthreads(1,1,1)]
-void DrawStaticTrail (uint3 id : SV_DispatchThreadID)
+void DrawChemical (uint3 id : SV_DispatchThreadID)
 {
     float4 color;
     if (brushType == 0) // attractant
@@ -448,11 +498,11 @@ void DrawStaticTrail (uint3 id : SV_DispatchThreadID)
     }
     else if (brushType == 1) // repellent
     {
-        color = float4(0.0, 0.0, 0.5, 0.5);
+        color = float4(0.0, 0.0, 0.5, 0.0);
     }
     else if (brushType == 2) // eraser
     {
-        color = float4(0.0, 0.0, 0.0, 0.0);
+        color = float4(0.0, 0.0, 0.0, 0.5);
     }
 
     for (int x = -brushHalfWidth; x <= brushHalfWidth; x++)
@@ -463,8 +513,27 @@ void DrawStaticTrail (uint3 id : SV_DispatchThreadID)
             {
                 int kernelX = wrap(mouseX + x, width);
                 int kernelY = wrap(mouseY + y, height);
-                staticTrailMap[int2(kernelX, kernelY)] = color;
+                chemicalSourceMap[int2(kernelX, kernelY)] = color;
             }
         }
     }
+}
+
+#pragma kernel InitializeChemicalMaps
+
+/* Sets default (no chemicals present) alpha channel values on the 3 chemical maps.
+ * 1.0 = attractant
+ * 0.5 = no chemical
+ * 0.0 = repellent
+ */
+[numthreads(8,8,1)]
+void InitializeChemicalMaps (uint3 id : SV_DispatchThreadID)
+{
+    if (id.x < 0 || id.x >= (uint)width || id.y < 0 || id.y >= (uint)height)
+    {
+        return;
+    }
+    chemicalSourceMap[id.xy] = float4(0.0, 0.0, 0.0, 0.5); // 0.5 alpha value = no chemical
+    chemicalMap[id.xy] = float4(0.0, 0.0, 0.0, 0.5);
+    processedChemicalMap[id.xy] = float4(0.0, 0.0, 0.0, 0.5);
 }

@@ -173,22 +173,22 @@ MonoBehaviour:
   bufferMaxAgentCount: 1
   agentCount: 500
   moveSpeed: 1
-  algorithmStepsPerFrame: 1
+  algorithmStepsPerFrame: 12
   agentRotationAngle: 45
   sensorOffset: 9
   sensorAngle: 0
   decay: 1
   diffuse: 1
   decayRate: 0.0025
-  diffuseRate: 0.25
+  diffuseRate: 0.5
   kernelHalfWidth: 1
   trailDeposit: 0.5
-  staticTrailStrength: 10
+  staticTrailStrength: 30
   circularDomain: 1
   agentCollision: 1
-  torus: 1
+  torus: 0
   staticOverlay: 1
-  brushHalfWidth: 2
+  brushHalfWidth: 3
 --- !u!1 &1079781145
 GameObject:
   m_ObjectHideFlags: 0
