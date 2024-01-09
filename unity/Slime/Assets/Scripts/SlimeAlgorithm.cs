@@ -102,7 +102,7 @@ public class SlimeAlgorithm : MonoBehaviour
 	/// Rate at which to diffuse trail map.
 	/// E.g. final diffuse rate 50% -> equally weighted average between original and diffused trail values.
 	/// </summary>
-	[Min(0)] public float diffuseRate;
+	[Range(0, 1)] public float diffuseRate;
 
 	/// <summary>
 	/// Width of kernel used for trail map diffusion = 1 + 2 * kernelHalfWidth.
