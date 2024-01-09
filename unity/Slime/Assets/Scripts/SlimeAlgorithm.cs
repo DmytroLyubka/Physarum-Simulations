@@ -20,16 +20,6 @@ public class SlimeAlgorithm : MonoBehaviour
 	private RenderTexture chemicalSourceMap;
 	
 	/// <summary>
-	/// Stores attractant/repellent chemicals.
-	/// </summary>
-	private RenderTexture chemicalMap;
-	
-	/// <summary>
-	/// Stores processed (decayed, diffused, etc.) chemical map values over time.
-	/// </summary>
-	private RenderTexture processedChemicalMap;
-	
-	/// <summary>
 	/// Holds agent objects to be used by compute shaders.
 	/// </summary>
 	public ComputeBuffer agentBuffer;
@@ -118,7 +108,7 @@ public class SlimeAlgorithm : MonoBehaviour
 	/// <summary>
 	/// Strength of chemicals compared to agent trails.
 	/// </summary>
-	[Min(0)] public float chemicalDominance;
+	[Range(0, 50)] public float chemicalDominance;
 	
 	/// <summary>
 	/// Multiplicative repelling factor applied to agents that meet repellent to increase their displacement.
@@ -205,30 +195,11 @@ public class SlimeAlgorithm : MonoBehaviour
 			filterMode = FilterMode.Bilinear			
 		};
 		
-		// Create chemical map
-		chemicalMap = new RenderTexture(width, height, 0) 
-		{
-			enableRandomWrite = true,
-			filterMode = FilterMode.Bilinear
-		};
-		chemicalMap.Create();
-		
-		// Create processed chemical map
-		processedChemicalMap = new RenderTexture(width, height, 0)
-		{
-			enableRandomWrite = true,
-			filterMode = FilterMode.Bilinear			
-		};
-		processedChemicalMap.Create();
-		
 		// Assign textures in compute shader
 		algorithmComputeShader.SetTexture(0, "trailMap", trailMap); // AlgorithmStep
-		algorithmComputeShader.SetTexture(0, "chemicalMap", chemicalMap);
 		algorithmComputeShader.SetTexture(0, "chemicalSourceMap", chemicalSourceMap);
 		algorithmComputeShader.SetTexture(1, "trailMap", trailMap); // ProcessTrailMap
 		algorithmComputeShader.SetTexture(1, "processedTrailMap", processedTrailMap);
-		algorithmComputeShader.SetTexture(1, "chemicalMap", chemicalMap);
-		algorithmComputeShader.SetTexture(1, "processedChemicalMap", processedChemicalMap);
 		algorithmComputeShader.SetTexture(1, "chemicalSourceMap", chemicalSourceMap);
 		algorithmComputeShader.SetTexture(2, "chemicalSourceMap", chemicalSourceMap); // RefreshChemicalValues
 		algorithmComputeShader.SetTexture(2, "processedTrailMap", processedTrailMap);
@@ -236,8 +207,7 @@ public class SlimeAlgorithm : MonoBehaviour
 		algorithmComputeShader.SetTexture(3, "chemicalSourceMap", chemicalSourceMap);
 		algorithmComputeShader.SetTexture(4, "chemicalSourceMap", chemicalSourceMap); // DrawChemical
 		algorithmComputeShader.SetTexture(5, "chemicalSourceMap", chemicalSourceMap); // InitializeChemicalMaps
-		algorithmComputeShader.SetTexture(5, "chemicalMap", chemicalMap);
-		algorithmComputeShader.SetTexture(5, "processedChemicalMap", processedChemicalMap);
+		algorithmComputeShader.SetTexture(5, "trailMap", trailMap);
 		
 		// Create agents with random position and angles
 		Agent[] agents = new Agent[bufferMaxAgentCount ? 65535 : agentCount];
@@ -320,7 +290,6 @@ public class SlimeAlgorithm : MonoBehaviour
 		Dispatch(algorithmComputeShader, width, height, 1, kernelIndex: 1); // ProcessTrailMap
 		Dispatch(algorithmComputeShader, width, height, 1, kernelIndex: 2); // RefreshChemicalValues
 		Graphics.Blit(processedTrailMap, trailMap);
-		Graphics.Blit(processedChemicalMap, chemicalMap);
 		if (chemicalSourceOverlay)
 		{
 			Dispatch(algorithmComputeShader, width, height, 1, kernelIndex: 3); // ChemicalSourceOverlay

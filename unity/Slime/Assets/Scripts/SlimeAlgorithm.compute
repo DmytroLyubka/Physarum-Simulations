@@ -10,7 +10,6 @@ struct Agent
 RWStructuredBuffer<Agent> agents; // contains agent structures
 RWTexture2D<float4> trailMap; // tracks agent positions over time
 RWTexture2D<float4> chemicalSourceMap; // texture for chemical sources
-RWTexture2D<float4> chemicalMap; // tracks chemicals
 uint agentCount; // number of agents in simulation
 int width; // texture width
 int height; // texture height
@@ -73,7 +72,7 @@ float checkSensor(Agent agent, float sensorDeltaAngle)
 
     // Formula: f(x) = (x-0.5) * 2. Attractant = 1, repellent = 0, nothing = 0.5. Then, f(repellent) = -1, f(attractant) = +1, f(nothing) = 0
     return dot(trailMap[int2(sensorCoordX, sensorCoordY)].xyz, int3(1, 1, 1))
-        + dot(chemicalMap[int2(sensorCoordX, sensorCoordY)].xyz, int3(1, 1, 1)) * (chemicalMap[int2(sensorCoordX, sensorCoordY)].w - 0.5) * 2 * chemicalDominance;
+        + (trailMap[int2(sensorCoordX, sensorCoordY)].w - 0.5) * 2 * chemicalDominance;
 }
 
 // Checks if two numbers are approximately equal, up to epsilon = 0.01. Using equality doesn't seem to work very well...
@@ -367,7 +366,6 @@ void AlgorithmStep (uint3 id : SV_DispatchThreadID)
 #pragma kernel ProcessTrailMap
 
 RWTexture2D<float4> processedTrailMap; // texture for trail map post-processing
-RWTexture2D<float4> processedChemicalMap; // texture for chemical map post-processing
 float decayRate;
 float diffuseRate;
 int kernelHalfWidth;
@@ -381,65 +379,60 @@ void ProcessTrailMap (uint3 id : SV_DispatchThreadID)
         return;
     }
 
-
     // Deposit chemicals from chemical source map onto chemical map
     if (approx(chemicalSourceMap[id.xy].w, 1.0)) // attractant
     {
-        chemicalMap[id.xy] = float4(1.0, 1.0, 1.0, 1.0);
+        trailMap[id.xy] = float4(trailMap[id.xy].xyz, 1.0);
     }
     
     if (approx(chemicalSourceMap[id.xy].w, 0.0)) // repellent
     {
-        chemicalMap[id.xy] = float4(1.0, 1.0, 1.0, 0.0);
+       trailMap[id.xy] = float4(trailMap[id.xy].xyz, 0.0);
     }
     
     if (approx(chemicalSourceMap[id.xy].w, 0.5)) // no chemical
     {
-        chemicalMap[id.xy] = float4(0.0, 0.0, 0.0, 0.5);
+        trailMap[id.xy] = float4(trailMap[id.xy].xyz, 0.5);
     }
 
     // Trail map processing
-    float3 trailSum = 0;
+    float4 sum = 0;
     for (int x = -kernelHalfWidth; x <= kernelHalfWidth; x++)
     {
         for (int y = -kernelHalfWidth; y <= kernelHalfWidth; y++)
         {
             int kernelX = wrap(id.x + x, width);
             int kernelY = wrap(id.y + y, height);
-            trailSum += trailMap[int2(kernelX, kernelY)].xyz;
+            sum += trailMap[int2(kernelX, kernelY)];
         }
     }
 
-    float3 diffusedTrail = trailSum / ((1 + 2 * kernelHalfWidth) * (1 + 2 * kernelHalfWidth));
+    float4 diffusedTrail = sum / ((1 + 2 * kernelHalfWidth) * (1 + 2 * kernelHalfWidth));
 
     // Weighted average between original and diffused trail values
-    float3 weightedDiffusedTrail = (1 - diffuseRate) * trailMap[id.xy].xyz + diffuseRate * diffusedTrail;
+    float4 weightedDiffusedTrail = (1 - diffuseRate) * trailMap[id.xy] + diffuseRate * diffusedTrail;
 
-    processedTrailMap[id.xy] = float4(max(0, weightedDiffusedTrail - decayRate), trailMap[id.xy].w);
-
-    // --------------------------------------------------------------------------------------------------------
-
-    /* Chemical map processing. Note that unlike the trail map, we are diffusing and decaying
-     * and diffusing the alpha channel as well. This is to ensure that varying chemical gradients
-     * are possible.
-     */
-    float4 chemicalSum = 0;
-    for (x = -kernelHalfWidth; x <= kernelHalfWidth; x++)
+    float oldChemicalAlpha = weightedDiffusedTrail.w;
+    float newChemicalAlpha;
+    
+    if (approx(oldChemicalAlpha, 0.5)) // no chemical
     {
-        for (int y = -kernelHalfWidth; y <= kernelHalfWidth; y++)
-        {
-            int kernelX = wrap(id.x + x, width);
-            int kernelY = wrap(id.y + y, height);
-            chemicalSum += chemicalMap[int2(kernelX, kernelY)];
-        }
+        newChemicalAlpha = oldChemicalAlpha;
+    }
+    else if (oldChemicalAlpha < 0.5) // repellent
+    {
+        float oldRepellentValue = (oldChemicalAlpha - 0.5) * 2;
+        float newRepellentValue = oldRepellentValue + decayRate;
+        newChemicalAlpha = (newRepellentValue / 2) + 0.5;
+    }
+    else if (oldChemicalAlpha > 0.5) // attractant
+    {
+        float oldAttractantValue = (oldChemicalAlpha - 0.5) * 2;
+        float newAttractantValue = oldAttractantValue - decayRate;
+        newChemicalAlpha = (newAttractantValue / 2) + 0.5;
     }
 
-    float4 diffusedChemical = chemicalSum / ((1 + 2 * kernelHalfWidth) * (1 + 2 * kernelHalfWidth));
-
-    // Weighted average between original and diffused trail values
-    float4 weightedDiffusedChemical = (1 - diffuseRate) * chemicalMap[id.xy] + diffuseRate * diffusedChemical;
-
-    processedChemicalMap[id.xy] = max(0, weightedDiffusedChemical - decayRate);
+    processedTrailMap[id.xy] = float4(max(0, weightedDiffusedTrail.xyz - decayRate), newChemicalAlpha);
 }
 
 #pragma kernel RefreshChemicalValues
@@ -543,6 +536,5 @@ void InitializeChemicalMaps (uint3 id : SV_DispatchThreadID)
         return;
     }
     chemicalSourceMap[id.xy] = float4(0.0, 0.0, 0.0, 0.5); // 0.5 alpha value = no chemical
-    chemicalMap[id.xy] = float4(0.0, 0.0, 0.0, 0.5);
-    processedChemicalMap[id.xy] = float4(0.0, 0.0, 0.0, 0.5);
+    trailMap[id.xy] = float4(0.0, 0.0, 0.0, 0.5);
 }
