@@ -379,7 +379,7 @@ void ProcessTrailMap (uint3 id : SV_DispatchThreadID)
         return;
     }
 
-    // Deposit chemicals from chemical source map onto chemical map
+    // Deposit chemicals from chemical source map onto trail map
     if (approx(chemicalSourceMap[id.xy].w, 1.0)) // attractant
     {
         trailMap[id.xy] = float4(trailMap[id.xy].xyz, 1.0);
@@ -412,6 +412,7 @@ void ProcessTrailMap (uint3 id : SV_DispatchThreadID)
     // Weighted average between original and diffused trail values
     float4 weightedDiffusedTrail = (1 - diffuseRate) * trailMap[id.xy] + diffuseRate * diffusedTrail;
 
+    // Chemical stored in the alpha channel needs to be decayed separetely the the RGB channels.
     float oldChemicalAlpha = weightedDiffusedTrail.w;
     float newChemicalAlpha;
     
@@ -489,7 +490,7 @@ float mouseY; // mouse y-coordinate
 int brushType; // 0: attractant, 1: repellent, 2: eraser
 int brushHalfWidth; // half-width of brush tooltip
 
-// Draw chemical onto chemical map.
+// Draw chemical onto chemical source map.
 [numthreads(1,1,1)]
 void DrawChemical (uint3 id : SV_DispatchThreadID)
 {
@@ -523,7 +524,8 @@ void DrawChemical (uint3 id : SV_DispatchThreadID)
 
 #pragma kernel InitializeChemicalMaps
 
-/* Sets default (no chemicals present) alpha channel values on the 3 chemical maps.
+/* Sets default (no chemicals present) alpha channel values on the chemical source map
+ * and the trail map.
  * 1.0 = attractant
  * 0.5 = no chemical
  * 0.0 = repellent
