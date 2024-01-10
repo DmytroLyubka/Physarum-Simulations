@@ -51,7 +51,7 @@ float wrap(float value, float boundary)
 {
     if (torus)
     {
-        return (int) round(mod(value, boundary));
+        return (float) round(mod(value, boundary-1));
     }
     else
     {
@@ -113,7 +113,7 @@ void AlgorithmStep (uint3 id : SV_DispatchThreadID)
     bool repellentFound = false;
 
     // All trail values are positive (no repellents found), algorithm step matches Jones's
-    if (frontTrailValue >= 0 && leftTrailValue >= 0 && rightTrailValue >= 0)
+    if ((frontTrailValue > 0 || approx(frontTrailValue, 0)) && (leftTrailValue > 0 || approx(leftTrailValue, 0)) && (rightTrailValue > 0 || approx(rightTrailValue, 0)))
     {
         // Continue in same direction
         if (frontTrailValue > leftTrailValue && frontTrailValue > rightTrailValue)

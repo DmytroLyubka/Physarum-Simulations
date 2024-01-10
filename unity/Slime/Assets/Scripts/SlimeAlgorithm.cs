@@ -174,7 +174,7 @@ public class SlimeAlgorithm : MonoBehaviour
 	void Init()
 	{
 		// Create trail map
-		trailMap = new RenderTexture(width, height, 0) 
+		trailMap = new RenderTexture(width, height, 0)
 		{
 			enableRandomWrite = true,
 			filterMode = FilterMode.Bilinear
@@ -182,7 +182,7 @@ public class SlimeAlgorithm : MonoBehaviour
 		trailMap.Create();
 		
 		// Create processed trail map
-		processedTrailMap = new RenderTexture(width, height, 0) 
+		processedTrailMap = new RenderTexture(width, height, 0)
 		{
 			enableRandomWrite = true,
 			filterMode = FilterMode.Bilinear
@@ -192,7 +192,7 @@ public class SlimeAlgorithm : MonoBehaviour
 		chemicalSourceMap = new RenderTexture(width, height, 0)
 		{
 			enableRandomWrite = true,
-			filterMode = FilterMode.Bilinear			
+			filterMode = FilterMode.Bilinear
 		};
 		
 		// Assign textures in compute shader
