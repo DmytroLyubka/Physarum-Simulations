@@ -143,6 +143,11 @@ public class SlimeAlgorithm : MonoBehaviour
 	public bool chemicalSourceOverlay;
 	
 	/// <summary>
+	/// Enable helper circle for polygon vertex placement.
+	/// </summary>
+	public bool polygonCircle;
+	
+	/// <summary>
 	/// Width of brush used for chemical source drawing = 1 + 2 * brushHalfWidth.
 	/// </summary>
 	public int brushHalfWidth;
@@ -286,6 +291,7 @@ public class SlimeAlgorithm : MonoBehaviour
 		algorithmComputeShader.SetBool("torus", torus);
 		algorithmComputeShader.SetBool("voronoiEnvironment", voronoiEnvironment);
 		algorithmComputeShader.SetBool("chemicalSourceOverlay", chemicalSourceOverlay);
+		algorithmComputeShader.SetBool("polygonCircle", polygonCircle);
 		algorithmComputeShader.SetInt("brushHalfWidth", brushHalfWidth);
 		algorithmComputeShader.SetFloat("mouseX", mouseX);
 		algorithmComputeShader.SetFloat("mouseY", mouseY);

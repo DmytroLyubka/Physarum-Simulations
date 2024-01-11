@@ -479,6 +479,8 @@ void RefreshChemicalValues (uint3 id : SV_DispatchThreadID)
 
 #pragma kernel ChemicalSourceOverlay
 
+bool polygonCircle; // toggles helper circle for polygon vertex placement
+
 /* Overlays chemical source map image onto output texture. Purely a visual effect. Very helpful
  * during testing, but it doesn't look very good. We'll need to improve this later to get
  * cleaner, more visually appealing outputs.
@@ -494,6 +496,15 @@ void ChemicalSourceOverlay (uint3 id : SV_DispatchThreadID)
     if (!approx(chemicalSourceMap[id.xy].w, 0.5))
     {
         processedTrailMap[id.xy] = chemicalSourceMap[id.xy] * 2.0;
+    }
+
+    if (polygonCircle)
+    {
+        if (((id.x - (float)width/2.0) * (id.x - (float)width/2) + (id.y - (float)height/2) * (id.y - (float)height/2) > (float)width/4.25 * (float)width/4.25)
+            && ((id.x - (float)width/2.0) * (id.x - (float)width/2) + (id.y - (float)height/2) * (id.y - (float)height/2) < (float)width/4.15 * (float)width/4.15))
+        {
+            processedTrailMap[id.xy] = float4(1.0, 0.0, 0.0, 0.0);
+        }
     }
 }
 
