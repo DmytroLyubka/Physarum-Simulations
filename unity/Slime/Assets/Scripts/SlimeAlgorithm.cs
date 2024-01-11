@@ -108,7 +108,7 @@ public class SlimeAlgorithm : MonoBehaviour
 	/// <summary>
 	/// Strength of chemicals compared to agent trails.
 	/// </summary>
-	[Range(0, 50)] public float chemicalDominance;
+	[Min(0)] public float chemicalDominance;
 	
 	/// <summary>
 	/// Multiplicative repelling factor applied to agents that meet repellent to increase their displacement.
@@ -167,6 +167,18 @@ public class SlimeAlgorithm : MonoBehaviour
 	/// Tracks chemical eraser status.
 	/// </summary>
 	private bool erase;
+	
+	/// <summary>
+	/// Tracks torus toggle status. Used in Update() to make torus and circular
+	/// domain options mutually exclusive.
+	/// </summary>
+	private bool torusEnabled;
+	
+	/// <summary>
+	/// Tracks circular domain toggle status. Used in Update() to make torus
+	/// and circular domain options mutually exclusive.
+	/// </summary>
+	private bool circularDomainEnabled;
 	
 	/// <summary>
 	/// Initializes algorithm and compute shader parameters.
@@ -319,6 +331,29 @@ public class SlimeAlgorithm : MonoBehaviour
 	
 	void Update() 
 	{
+		if (torus && !torusEnabled)
+		{
+			torusEnabled = torus;
+			voronoiEnvironment = false;
+			circularDomain = false;
+			circularDomainEnabled = false;
+		}
+		else if (!torus && torusEnabled)
+		{
+			torusEnabled = torus;
+		}
+		
+		if (circularDomain && !circularDomainEnabled)
+		{
+			circularDomainEnabled = circularDomain;
+			torus = false;
+			torusEnabled = false;
+		}
+		else if (!circularDomain && circularDomainEnabled) 
+		{
+			circularDomainEnabled = circularDomain;
+		}
+	
 		Vector3 mousePosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
 		Vector2 texturePosition = ((new Vector2(mousePosition.x, mousePosition.y) + new Vector2(Camera.main.orthographicSize, Camera.main.orthographicSize))) / (Camera.main.orthographicSize * 2) * width;
 		

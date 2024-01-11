@@ -1,15 +1,15 @@
 #pragma kernel AlgorithmStep
 
-// Agent structure to match that of the slime algorithm.
+// Agent struct
 struct Agent
 {
     float2 position;
     float angle;
 };
 
-RWStructuredBuffer<Agent> agents; // contains agent structures
-RWTexture2D<float4> trailMap; // tracks agent positions over time
-RWTexture2D<float4> chemicalSourceMap; // texture for chemical sources
+RWStructuredBuffer<Agent> agents; // contains agent structs
+RWTexture2D<float4> trailMap; // tracks agent positions + trail deposits
+RWTexture2D<float4> chemicalSourceMap; // tracks chemical sources
 uint agentCount; // number of agents in simulation
 int width; // texture width
 int height; // texture height
@@ -23,9 +23,10 @@ bool agentCollision; // agent collision toggle
 bool torus; // torus surface toggle
 float chemicalDominance; // strength of chemicals compared to agent trails
 bool circularDomain; // toggles circular agent domain
-float repellentStrength; // strength of repellent
+float repellentStrength; // increase to movement speed when repellent is found
 
 // Computes a random 32-bit uint in the range 0 to 4294967295.
+// https://www.pcg-random.org/index.html
 uint pcgHash(uint input)
 {
     uint state = input * 747796405u + 2891336453u;
@@ -33,7 +34,7 @@ uint pcgHash(uint input)
     return (word >> 22u) ^ word;
 }
 
-// Scales random uint to the range 0 and 1.
+// Scales pcgHash() output to the range 0 and 1.
 float scale(uint input)
 {
     // 4294967295 = maximum value of a 32-bit unsigned int
@@ -47,11 +48,12 @@ float mod(float n, float m)
 }
 
 // Clamps / wraps value on/around boundary depending on whether or not a torus surface is enabled.
-float wrap(float value, float boundary)
+// Casts and rounds mod value to int if torus is enabled.
+float wrapIndex(float value, float boundary)
 {
     if (torus)
     {
-        return (float) round(mod(value, boundary-1));
+        return (int) round(mod(value, boundary-1));
     }
     else
     {
@@ -59,21 +61,20 @@ float wrap(float value, float boundary)
     }
 }
 
-// Checks trail map value detected by a sensor with angle sensorDeltaAngle
-// relative to agent.
-float checkSensor(Agent agent, float sensorDeltaAngle)
+// Clamps / wraps value on/around boundary depending on whether or not a torus surface is enabled.
+float wrap(float value, float boundary)
 {
-    float globalSensorAngle = agent.angle + sensorDeltaAngle;
-    float2 sensorDirection = float2(cos(globalSensorAngle), sin(globalSensorAngle));
-    float2 sensorPosition = agent.position + sensorDirection * sensorOffset;
-
-    int sensorCoordX = wrap(sensorPosition.x, width);
-    int sensorCoordY = wrap(sensorPosition.y, height);
-
-    // Formula: f(x) = (x-0.5) * 2. Attractant = 1, repellent = 0, nothing = 0.5. Then, f(repellent) = -1, f(attractant) = +1, f(nothing) = 0
-    return dot(trailMap[int2(sensorCoordX, sensorCoordY)].xyz, int3(1, 1, 1))
-        + (trailMap[int2(sensorCoordX, sensorCoordY)].w - 0.5) * 2 * chemicalDominance;
+    if (torus)
+    {
+        return mod(value, boundary-1);
+    }
+    else
+    {
+        return clamp(value, 0, boundary-1);
+    }
 }
+
+
 
 // Checks if two numbers are approximately equal, up to epsilon = 0.01. Using equality doesn't seem to work very well...
 // Maybe due to the RenderTexture color format that we have? Using a "bigger" format (more bits per channel) might solve
@@ -88,6 +89,21 @@ bool approx(float value, float target)
     {
         return false;
     }
+}
+
+// Checks trail map value detected by a sensor with angle sensorDeltaAngle relative to agent.
+float checkSensor(Agent agent, float sensorDeltaAngle)
+{
+    float globalSensorAngle = agent.angle + sensorDeltaAngle;
+    float2 sensorDirection = float2(cos(globalSensorAngle), sin(globalSensorAngle));
+    float2 sensorPosition = agent.position + sensorDirection * sensorOffset;
+
+    int sensorCoordX = wrap(sensorPosition.x, width);
+    int sensorCoordY = wrap(sensorPosition.y, height);
+
+    // Formula: f(x) = (x-0.5) * 2. Attractant = 1, repellent = 0, nothing = 0.5. Then, f(repellent) = -1, f(attractant) = +1, f(nothing) = 0
+    return dot(trailMap[int2(sensorCoordX, sensorCoordY)].xyz, int3(1, 1, 1))
+        + (trailMap[int2(sensorCoordX, sensorCoordY)].w - 0.5) * 2 * chemicalDominance;
 }
 
 // Executes algorithm step.
@@ -329,7 +345,6 @@ void AlgorithmStep (uint3 id : SV_DispatchThreadID)
         {
             random = pcgHash(random);
             float randomAngle = scale(random) * 2 * 3.1415;
-
             agents[id.x].angle = randomAngle;
         }
         // No boundaries hit, deposit trail
@@ -361,7 +376,6 @@ void AlgorithmStep (uint3 id : SV_DispatchThreadID)
         }
     }
 }
-
 
 #pragma kernel ProcessTrailMap
 
@@ -401,8 +415,8 @@ void ProcessTrailMap (uint3 id : SV_DispatchThreadID)
     {
         for (int y = -kernelHalfWidth; y <= kernelHalfWidth; y++)
         {
-            int kernelX = wrap(id.x + x, width);
-            int kernelY = wrap(id.y + y, height);
+            int kernelX = wrapIndex(id.x + x, width);
+            int kernelY = wrapIndex(id.y + y, height);
             sum += trailMap[int2(kernelX, kernelY)];
         }
     }
@@ -514,8 +528,8 @@ void DrawChemical (uint3 id : SV_DispatchThreadID)
         {
             if (x*x + y*y <= brushHalfWidth*brushHalfWidth)
             {
-                int kernelX = wrap(mouseX + x, width);
-                int kernelY = wrap(mouseY + y, height);
+                int kernelX = wrapIndex(mouseX + x, width);
+                int kernelY = wrapIndex(mouseY + y, height);
                 chemicalSourceMap[int2(kernelX, kernelY)] = color;
             }
         }
