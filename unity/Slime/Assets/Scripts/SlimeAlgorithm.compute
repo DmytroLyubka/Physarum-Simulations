@@ -102,7 +102,7 @@ float checkSensor(Agent agent, float sensorDeltaAngle)
     int sensorCoordY = wrap(sensorPosition.y, height);
 
     // Formula: f(x) = (x-0.5) * 2. Attractant = 1, repellent = 0, nothing = 0.5. Then, f(repellent) = -1, f(attractant) = +1, f(nothing) = 0
-    return dot(trailMap[int2(sensorCoordX, sensorCoordY)].xyz, int3(1, 1, 1))
+    return dot(trailMap[int2(sensorCoordX, sensorCoordY)].xyz, int3(1, 1, 1)) / 3
         + (trailMap[int2(sensorCoordX, sensorCoordY)].w - 0.5) * 2 * chemicalDominance;
 }
 
@@ -128,6 +128,7 @@ void AlgorithmStep (uint3 id : SV_DispatchThreadID)
     bool newPositionOccupied = false;
     bool repellentFound = false;
 
+    float chemicalSpeedBoost = 1;
     // All trail values are positive (no repellents found), algorithm step matches Jones's
     if ((frontTrailValue > 0 || approx(frontTrailValue, 0)) && (leftTrailValue > 0 || approx(leftTrailValue, 0)) && (rightTrailValue > 0 || approx(rightTrailValue, 0)))
     {
@@ -188,11 +189,13 @@ void AlgorithmStep (uint3 id : SV_DispatchThreadID)
         // Turn right
         else if (rightTrailValue > leftTrailValue)
         {
+            chemicalSpeedBoost = rightTrailValue;
             agents[id.x].angle -= agentRotationAngle;
         }
         // Turn left
         else if (leftTrailValue > rightTrailValue)
         {
+            chemicalSpeedBoost = leftTrailValue;
             agents[id.x].angle += agentRotationAngle;
         }
         else
@@ -222,21 +225,25 @@ void AlgorithmStep (uint3 id : SV_DispatchThreadID)
         // Left and front trail values are negative: rotate right twice as much.
         else if (leftTrailValue < 0 && frontTrailValue < 0)
         {
+            chemicalSpeedBoost = -(leftTrailValue + frontTrailValue);
             agents[id.x].angle -= 2 * agentRotationAngle;
         }
         // Right and front trail values are negative: rotate left twice as much.
         else if (rightTrailValue < 0 && frontTrailValue < 0)
         {
+            chemicalSpeedBoost = -(rightTrailValue + frontTrailValue);
             agents[id.x].angle += 2 * agentRotationAngle;
         }
         // Left and right trail values are negative: don't rotate.
         else if (leftTrailValue < 0 && rightTrailValue < 0)
         {
+            chemicalSpeedBoost = -(leftTrailValue + rightTrailValue);
             // pass
         }
         // Left trail value is negative: rotate right once if front is largest, twice if right is largest.
         else if (leftTrailValue < 0)
         {
+            chemicalSpeedBoost = -leftTrailValue;
             if (frontTrailValue > rightTrailValue)
             {
                 agents[id.x].angle -= agentRotationAngle;
@@ -261,6 +268,7 @@ void AlgorithmStep (uint3 id : SV_DispatchThreadID)
         // Right trail value is negative: rotate left once if front is largest, twice if left is largest.
         else if (rightTrailValue < 0)
         {
+            chemicalSpeedBoost = -rightTrailValue;
             if (frontTrailValue > leftTrailValue)
             {
                 agents[id.x].angle += agentRotationAngle;
@@ -285,6 +293,7 @@ void AlgorithmStep (uint3 id : SV_DispatchThreadID)
         // Front trail value is negative: rotate left twice if left is largest, right twice if right is largest.
         else if (frontTrailValue < 0)
         {
+            chemicalSpeedBoost = -frontTrailValue;
             if (leftTrailValue > rightTrailValue)
             {
                 agents[id.x].angle += 2 * agentRotationAngle;
@@ -310,7 +319,8 @@ void AlgorithmStep (uint3 id : SV_DispatchThreadID)
 
     // Update position. If a repellent is found, increase the distance that the agent jumps.
     float2 direction = float2(cos(agents[id.x].angle), sin(agents[id.x].angle));
-    float2 newPosition = agent.position + direction * moveSpeed * (repellentFound ? repellentStrength : 1.0);
+    float2 newPosition = agent.position + direction * moveSpeed * chemicalSpeedBoost * (repellentFound ? repellentStrength : 1.0);
+
 
     if (torus)
     {
