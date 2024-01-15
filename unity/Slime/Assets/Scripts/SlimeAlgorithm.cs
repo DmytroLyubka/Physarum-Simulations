@@ -344,6 +344,8 @@ public class SlimeAlgorithm : MonoBehaviour
 		// This is useful when placing chemicals before starting the algorithm.
 		if (algorithmStepsPerFrame == 0 && chemicalSourceOverlay) 
 		{
+			Dispatch(algorithmComputeShader, width, height, 1, kernelIndex: 1); // ProcessTrailMap
+			Graphics.Blit(processedTrailMap, trailMap);
 			Dispatch(algorithmComputeShader, width, height, 1, kernelIndex: 3);
 		}
 	}
