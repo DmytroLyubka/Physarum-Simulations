@@ -57,7 +57,7 @@ float wrapIndex(float value, float boundary)
     }
     else
     {
-        return clamp(value, 0, boundary-1);
+        return (int) round(clamp(value, 0, boundary-1));
     }
 }
 
@@ -73,8 +73,6 @@ float wrap(float value, float boundary)
         return clamp(value, 0, boundary-1);
     }
 }
-
-
 
 // Checks if two numbers are approximately equal, up to epsilon = 0.01. Using equality doesn't seem to work very well...
 // Maybe due to the RenderTexture color format that we have? Using a "bigger" format (more bits per channel) might solve

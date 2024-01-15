@@ -301,12 +301,19 @@ public class SlimeAlgorithm : MonoBehaviour
 
 	/// <summary>
 	/// Executes algorithm step.
-	/// </summary>
+	/// </summary>\
 	private void AlgorithmStep() 
 	{
 		Dispatch(algorithmComputeShader, agentCount, 1, 1, kernelIndex: 0); // AlgorithmStep
 		Dispatch(algorithmComputeShader, width, height, 1, kernelIndex: 1); // ProcessTrailMap
-		Dispatch(algorithmComputeShader, width, height, 1, kernelIndex: 2); // RefreshChemicalValues
+		
+		if ((!circularDomain && circularDomainEnabled) || (circularDomain && !circularDomainEnabled))
+		
+		{
+			circularDomainEnabled = !circularDomainEnabled;
+			Dispatch(algorithmComputeShader, width, height, 1, kernelIndex: 2); // RefreshChemicalValues
+		}
+		
 		Graphics.Blit(processedTrailMap, trailMap);
 		if (chemicalSourceOverlay)
 		{
