@@ -301,7 +301,7 @@ public class SlimeAlgorithm : MonoBehaviour
 
 	/// <summary>
 	/// Executes algorithm step.
-	/// </summary>\
+	/// </summary>
 	private void AlgorithmStep() 
 	{
 		Dispatch(algorithmComputeShader, agentCount, 1, 1, kernelIndex: 0); // AlgorithmStep
@@ -338,6 +338,13 @@ public class SlimeAlgorithm : MonoBehaviour
 		for (int i = 0; i < algorithmStepsPerFrame; i++) 
 		{
 			AlgorithmStep();
+		}
+		
+		// Display chemical sources even if no algorithm steps are being executed.
+		// This is useful when placing chemicals before starting the algorithm.
+		if (algorithmStepsPerFrame == 0 && chemicalSourceOverlay) 
+		{
+			Dispatch(algorithmComputeShader, width, height, 1, kernelIndex: 3);
 		}
 	}
 	
