@@ -351,7 +351,7 @@ public class SlimeAlgorithm : MonoBehaviour
 	}
 	
 	
-	void Update() 
+	void Update()
 	{
 		if (torus && !torusEnabled)
 		{
@@ -373,6 +373,8 @@ public class SlimeAlgorithm : MonoBehaviour
 		}
 		else if (!circularDomain && circularDomainEnabled) 
 		{
+			torus = false;
+			torusEnabled = false;
 			circularDomainEnabled = circularDomain;
 		}
 	
