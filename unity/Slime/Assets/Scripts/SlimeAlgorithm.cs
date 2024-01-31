@@ -22,7 +22,9 @@ public class SlimeAlgorithm : MonoBehaviour
 	/// <summary>
 	/// Holds agent objects to be used by compute shaders.
 	/// </summary>
-	public ComputeBuffer agentBuffer;
+	private ComputeBuffer agentBuffer;
+	
+	public int algorithmSteps;
 
 	[Header("Canvas Properties")]
 	/// <summary>
@@ -337,6 +339,7 @@ public class SlimeAlgorithm : MonoBehaviour
 		UpdateSettings();
 		for (int i = 0; i < algorithmStepsPerFrame; i++) 
 		{
+			algorithmSteps++;
 			AlgorithmStep();
 		}
 		
