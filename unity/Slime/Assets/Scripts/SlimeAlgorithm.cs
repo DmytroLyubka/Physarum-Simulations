@@ -302,9 +302,9 @@ public class SlimeAlgorithm : MonoBehaviour
 	}
 
 	/// <summary>
-	/// Executes algorithm step.
+	/// Executes a single algorithm step.
 	/// </summary>
-	private void AlgorithmStep() 
+	private void AlgorithmStep()
 	{
 		Dispatch(algorithmComputeShader, agentCount, 1, 1, kernelIndex: 0); // AlgorithmStep
 		Dispatch(algorithmComputeShader, width, height, 1, kernelIndex: 1); // ProcessTrailMap
@@ -323,7 +323,9 @@ public class SlimeAlgorithm : MonoBehaviour
 		}
 	}
 
-	// Start is called before the first frame update.
+	/// <summary>
+	/// Start() is called before the first frame update.
+	/// </summary>
 	void Start()
 	{
 		// Initialize algorithm
@@ -332,29 +334,12 @@ public class SlimeAlgorithm : MonoBehaviour
 		// Set render output to trail map
 		transform.GetComponentInChildren<MeshRenderer>().material.mainTexture = processedTrailMap;
 	}
-
-	// Update is called once per frame.
-	void FixedUpdate()
-	{
-		UpdateSettings();
-		for (int i = 0; i < algorithmStepsPerFrame; i++) 
-		{
-			algorithmSteps++;
-			AlgorithmStep();
-		}
-		
-		// Display chemical sources even if no algorithm steps are being executed.
-		// This is useful when placing chemicals before starting the algorithm.
-		if (algorithmStepsPerFrame == 0 && chemicalSourceOverlay) 
-		{
-			Dispatch(algorithmComputeShader, width, height, 1, kernelIndex: 1); // ProcessTrailMap
-			Graphics.Blit(processedTrailMap, trailMap);
-			Dispatch(algorithmComputeShader, width, height, 1, kernelIndex: 3);
-		}
-	}
 	
-	
-	void Update()
+	/// <summary>
+	/// Ensures that torus and circularDomain flags are mutually exclusive, keeps track of brush
+	/// tooltip status.
+	/// </summary>
+	void UpdateParameters()
 	{
 		if (torus && !torusEnabled)
 		{
@@ -374,7 +359,7 @@ public class SlimeAlgorithm : MonoBehaviour
 			torus = false;
 			torusEnabled = false;
 		}
-		else if (!circularDomain && circularDomainEnabled) 
+		else if (!circularDomain && circularDomainEnabled)
 		{
 			torus = false;
 			torusEnabled = false;
@@ -387,7 +372,7 @@ public class SlimeAlgorithm : MonoBehaviour
 		mouseX = texturePosition.x;
 		mouseY = texturePosition.y;
 		
-		if (Input.GetMouseButton(0)) 
+		if (Input.GetMouseButton(0))
 		{
 			if (mouseX > 0 && mouseX <= width && mouseY > 0 && mouseY <= height)
 			{
@@ -399,7 +384,7 @@ public class SlimeAlgorithm : MonoBehaviour
 				Dispatch(algorithmComputeShader, 1, 1, 1, kernelIndex: 4); // DrawChemical
 			}
 		}
-		else if (Input.GetMouseButton(1)) 
+		else if (Input.GetMouseButton(1))
 		{
 			if (mouseX > 0 && mouseX <= width && mouseY > 0 && mouseY <= height)
 			{
@@ -418,8 +403,28 @@ public class SlimeAlgorithm : MonoBehaviour
 			algorithmComputeShader.SetInt("brushType", brushType);
 		}
 	}
+	
+	void Update()
+	{
+		UpdateParameters();
+		UpdateSettings();
+		for (int i = 0; i < algorithmStepsPerFrame; i++)
+		{
+			algorithmSteps++;
+			AlgorithmStep();
+		}
+		
+		// Display chemical sources even if no algorithm steps are being executed.
+		// This is useful when placing chemicals before starting the algorithm.
+		if (algorithmStepsPerFrame == 0 && chemicalSourceOverlay)
+		{
+			Dispatch(algorithmComputeShader, width, height, 1, kernelIndex: 1); // ProcessTrailMap
+			Graphics.Blit(processedTrailMap, trailMap);
+			Dispatch(algorithmComputeShader, width, height, 1, kernelIndex: 3);
+		}
+	}
 
-	void OnDestroy() 
+	void OnDestroy()
 	{
 		// Release agent buffer when scene ends (just in case)
 		agentBuffer.Release();
