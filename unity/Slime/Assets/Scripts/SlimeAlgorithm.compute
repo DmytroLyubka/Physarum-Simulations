@@ -331,7 +331,7 @@ void AlgorithmStep (uint3 id : SV_DispatchThreadID)
         for (uint i = 0; i < agentCount; i++)
         {
             // Collision with agents
-            if (all(agents[i].position == newPosition))
+            if (all(floor(agents[i].position) == floor(newPosition)))
             {
                 newPositionOccupied = true;
             }
@@ -339,7 +339,7 @@ void AlgorithmStep (uint3 id : SV_DispatchThreadID)
             // Collision with attractant chemical
             if (approx(chemicalSourceMap[int2(newPosition)].w, 1.0))
             {
-                newPositionOccupied = true;
+                // newPositionOccupied = true;
             }
         }
     }
