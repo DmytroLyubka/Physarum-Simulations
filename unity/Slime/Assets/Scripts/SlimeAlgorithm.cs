@@ -33,6 +33,11 @@ public class SlimeAlgorithm : MonoBehaviour
 	/// Algorithm step breakpoint to pause simulation.
 	/// </summary>
 	public int algorithmStepBreakPoint;
+	
+	/// <summary>
+	/// Toggles extended algorithm features.
+	/// </summary>
+	public bool extendedAlgorithm;
 
 	[Header("Canvas Properties")]
 	/// <summary>
@@ -298,6 +303,7 @@ public class SlimeAlgorithm : MonoBehaviour
 		algorithmComputeShader.SetFloat("chemicalDominance", chemicalDominance);
 		algorithmComputeShader.SetBool("circularDomain", circularDomain);
 		algorithmComputeShader.SetBool("agentCollision", agentCollision);
+		algorithmComputeShader.SetBool("extendedAlgorithm", extendedAlgorithm);
 		algorithmComputeShader.SetBool("torus", torus);
 		algorithmComputeShader.SetBool("voronoiEnvironment", voronoiEnvironment);
 		algorithmComputeShader.SetBool("chemicalSourceOverlay", chemicalSourceOverlay);

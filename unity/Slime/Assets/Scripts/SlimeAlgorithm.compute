@@ -24,6 +24,7 @@ bool torus; // torus surface toggle
 float chemicalDominance; // strength of chemicals compared to agent trails
 bool circularDomain; // toggles circular agent domain
 float repellentStrength; // increase to movement speed when repellent is found
+bool extendedAlgorithm; // toggles extended algorithm features
 
 // Computes a random 32-bit uint in the range 0 to 4294967295.
 // https://www.pcg-random.org/index.html
@@ -128,7 +129,8 @@ void AlgorithmStep (uint3 id : SV_DispatchThreadID)
     float chemicalSpeedBoost = 1.0;
 
     // All trail values are positive (no repellents found), algorithm step matches Jones's
-    if ((frontTrailValue > 0 || approx(frontTrailValue, 0)) && (leftTrailValue > 0 || approx(leftTrailValue, 0)) && (rightTrailValue > 0 || approx(rightTrailValue, 0)))
+    if ((frontTrailValue > 0 || approx(frontTrailValue, 0)) && (leftTrailValue > 0 || approx(leftTrailValue, 0)) && (rightTrailValue > 0 || approx(rightTrailValue, 0))
+        || !extendedAlgorithm)
     {
         // Continue in same direction
         if (frontTrailValue > leftTrailValue && frontTrailValue > rightTrailValue)
@@ -317,7 +319,7 @@ void AlgorithmStep (uint3 id : SV_DispatchThreadID)
 
     // Calculate target position. If a repellent is found, increase the distance that the agent jumps.
     float2 direction = float2(cos(agents[id.x].angle), sin(agents[id.x].angle));
-    float2 newPosition = agent.position + direction * moveSpeed * chemicalSpeedBoost * (repellentFound ? repellentStrength : 1.0);
+    float2 newPosition = agent.position + direction * moveSpeed * (extendedAlgorithm ? chemicalSpeedBoost : 1.0) * (repellentFound ? repellentStrength : 1.0);
 
     if (torus)
     {
@@ -336,11 +338,11 @@ void AlgorithmStep (uint3 id : SV_DispatchThreadID)
                 newPositionOccupied = true;
             }
             
-            // Collision with attractant chemical
-            if (approx(chemicalSourceMap[int2(newPosition)].w, 1.0))
-            {
-                // newPositionOccupied = true;
-            }
+            // // Collision with attractant chemical
+            // if (approx(chemicalSourceMap[int2(newPosition)].w, 1.0))
+            // {
+            //     newPositionOccupied = true;
+            // }
         }
     }
 
