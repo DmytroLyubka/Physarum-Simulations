@@ -24,7 +24,15 @@ public class SlimeAlgorithm : MonoBehaviour
 	/// </summary>
 	private ComputeBuffer agentBuffer;
 	
+	/// <summary>
+	/// Tracks how many algorithm steps have been executed.
+	/// </summary>
 	public int algorithmSteps;
+	
+	/// <summary>
+	/// Algorithm step breakpoint to pause simulation.
+	/// </summary>
+	public int algorithmStepBreakPoint;
 
 	[Header("Canvas Properties")]
 	/// <summary>
@@ -52,7 +60,7 @@ public class SlimeAlgorithm : MonoBehaviour
 	/// <summary>
 	/// How many pixels agents move at each algorithm step.
 	/// </summary>
-	[Range(0, 10)] public float moveSpeed;
+	[Range(0, 1000)] public float moveSpeed;
 
 	/// <summary>
 	/// Number of algorithm steps to run at each frame.
@@ -410,8 +418,11 @@ public class SlimeAlgorithm : MonoBehaviour
 		UpdateSettings();
 		for (int i = 0; i < algorithmStepsPerFrame; i++)
 		{
-			algorithmSteps++;
-			AlgorithmStep();
+			if (algorithmSteps != algorithmStepBreakPoint)
+			{
+				algorithmSteps++;
+				AlgorithmStep();	
+			}
 		}
 		
 		// Display chemical sources even if no algorithm steps are being executed.
