@@ -35,6 +35,11 @@ public class SlimeAlgorithm : MonoBehaviour
 	public int algorithmStepBreakPoint;
 	
 	/// <summary>
+	/// Halts the execution of Algorithm steps.
+	/// </summary>
+	public bool stopAlgorithm;
+	
+	/// <summary>
 	/// Toggles extended algorithm features.
 	/// </summary>
 	public bool extendedAlgorithm;
@@ -189,18 +194,6 @@ public class SlimeAlgorithm : MonoBehaviour
 	private bool erase;
 	
 	/// <summary>
-	/// Tracks torus toggle status. Used in Update() to make torus and circular
-	/// domain options mutually exclusive.
-	/// </summary>
-	private bool torusEnabled;
-	
-	/// <summary>
-	/// Tracks circular domain toggle status. Used in Update() to make torus
-	/// and circular domain options mutually exclusive.
-	/// </summary>
-	private bool circularDomainEnabled;
-	
-	/// <summary>
 	/// Initializes algorithm and compute shader parameters.
 	/// </summary>
 	void Init()
@@ -322,13 +315,7 @@ public class SlimeAlgorithm : MonoBehaviour
 	{
 		Dispatch(algorithmComputeShader, agentCount, 1, 1, kernelIndex: 0); // AlgorithmStep
 		Dispatch(algorithmComputeShader, width, height, 1, kernelIndex: 1); // ProcessTrailMap
-		
-		if ((!circularDomain && circularDomainEnabled) || (circularDomain && !circularDomainEnabled))
-		
-		{
-			circularDomainEnabled = !circularDomainEnabled;
-			Dispatch(algorithmComputeShader, width, height, 1, kernelIndex: 2); // RefreshChemicalValues
-		}
+		Dispatch(algorithmComputeShader, width, height, 1, kernelIndex: 2); // RefreshChemicalValues
 		
 		Graphics.Blit(processedTrailMap, trailMap);
 		if (chemicalSourceOverlay)
@@ -355,31 +342,6 @@ public class SlimeAlgorithm : MonoBehaviour
 	/// </summary>
 	void UpdateParameters()
 	{
-		if (torus && !torusEnabled)
-		{
-			torusEnabled = torus;
-			voronoiEnvironment = false;
-			circularDomain = false;
-			circularDomainEnabled = false;
-		}
-		else if (!torus && torusEnabled)
-		{
-			torusEnabled = torus;
-		}
-		
-		if (circularDomain && !circularDomainEnabled)
-		{
-			circularDomainEnabled = circularDomain;
-			torus = false;
-			torusEnabled = false;
-		}
-		else if (!circularDomain && circularDomainEnabled)
-		{
-			torus = false;
-			torusEnabled = false;
-			circularDomainEnabled = circularDomain;
-		}
-	
 		Vector3 mousePosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
 		Vector2 texturePosition = ((new Vector2(mousePosition.x, mousePosition.y) + new Vector2(Camera.main.orthographicSize, Camera.main.orthographicSize))) / (Camera.main.orthographicSize * 2) * width;
 		
@@ -424,7 +386,7 @@ public class SlimeAlgorithm : MonoBehaviour
 		UpdateSettings();
 		for (int i = 0; i < algorithmStepsPerFrame; i++)
 		{
-			if (algorithmSteps != algorithmStepBreakPoint)
+			if (algorithmSteps != algorithmStepBreakPoint && !stopAlgorithm)
 			{
 				algorithmSteps++;
 				AlgorithmStep();	

@@ -323,8 +323,8 @@ void AlgorithmStep (uint3 id : SV_DispatchThreadID)
 
     if (torus)
     {
-        newPosition.x = mod(newPosition.x, width);
-        newPosition.y = mod(newPosition.y, height);
+        newPosition.x = mod(newPosition.x, width-1);
+        newPosition.y = mod(newPosition.y, height-1);
     }
 
     // Check if new position is already occupied by an agent
@@ -333,17 +333,18 @@ void AlgorithmStep (uint3 id : SV_DispatchThreadID)
         for (uint i = 0; i < agentCount; i++)
         {
             // Collision with agents
-            if (all(floor(agents[i].position) == floor(newPosition)))
+            if (all(floor(agents[i].position) == floor(newPosition)) && i != id.x)
+            // if (all(agents[i].position == newPosition))
             {
                 newPositionOccupied = true;
             }
-            
-            // // Collision with attractant chemical
-            // if (approx(chemicalSourceMap[int2(newPosition)].w, 1.0))
-            // {
-            //     newPositionOccupied = true;
-            // }
         }
+    }
+
+    // Collision with attractant chemical
+    if (approx(chemicalSourceMap[int2(newPosition)].w, 1.0))
+    {
+        newPositionOccupied = true;
     }
 
     if (circularDomain) // circular boundary
@@ -468,7 +469,7 @@ void RefreshChemicalValues (uint3 id : SV_DispatchThreadID)
     }
 
     // Attractant placed around circular domain - needed for Voronoi cells
-    if ((id.x - (float)width/2.0) * (id.x - (float)width/2) + (id.y - (float)height/2) * (id.y - (float)height/2) > (float)width/2.25 * (float)width/2.25)
+    if ((id.x - (float)width/2.0) * (id.x - (float)width/2.0) + (id.y - (float)height/2.0) * (id.y - (float)height/2.0) > (float)width/2.3 * (float)width/2.3)
     {
         if (voronoiEnvironment)
         {
