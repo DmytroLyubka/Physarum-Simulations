@@ -152,16 +152,6 @@ export const simulationStep = () => {
         if (frontTrail > leftTrail && frontTrail > rightTrail) { // front is strongest
             // pass
         }
-        /* Note: It doesn't really make sense to have this step be random? The fact that
-         * the front sensor is detecting a weaker trail than the two off-centre
-         * sensors does not imply that the left and right sensors have equal "weight",
-         * it is very much possible that the left sensor has detected a higher trail value
-         * while at the same time the front sensor has detected the lowest trail value (in
-         * which case the agent should rotate left).
-         * 
-         * TODO: Make this step more deterministic, only have random rotation if left and right
-         * sensors have the same trail value, both of which must be higher than the front sensor's.
-         */
         else if (frontTrail < leftTrail && frontTrail < rightTrail) { // front is least strong
             agent.angle = getRandom(0, 1) > 0.5 ? agent.angle + agent.rotationAngle : agent.angle - agent.rotationAngle
         }
