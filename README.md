@@ -1,6 +1,6 @@
 # Physarum-Simulations
 
-*Physarum polycephalum* algorithm implementations in JS and Unity. The algorithm exhibits emergent pattern behaviour as well as the ability to approximate Euclidean Steiner trees and Voronoi diagrams.
+*Physarum polycephalum* algorithm simulations. The original algorithm (J. Jones, 2010) exhibits emergent pattern behaviour as well as the ability to approximate Euclidean Steiner trees to a notable degree of accuracy. The algorithm has been extended to support more precise rotation rules as well as supporting chemorepellents, which allows it to also approximate Voronoi diagrams and generally behave more naturally.
 
 ## Implementations
 - `./unity`: Unity implementation using C# and compute shaders.
