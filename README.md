@@ -1,4 +1,4 @@
-# slime
+# Physarum-Simulations
 
 *Physarum polycephalum* pattern-forming algorithm implementations in JS and Unity.
 
@@ -25,7 +25,10 @@
 
 ![4 point Steiner tree](./images/steiner_4.png)
 
-![Comparing simulated Steiner tree 1 to accurate graph](./images/steiner_simulation_1.png) ![Comparing simulated Steiner tree 2 to accurate graph](./images/steiner_simulation_2.png)
+<p align="center">
+  <img src="./images/steiner_simulation_1.png" alt="Comparing simulated Steiner tree 1 to accurate graph" width="45%" />
+  <img src="./images/steiner_simulation_2.png" alt="Comparing simulated Steiner tree 2 to accurate graph" width="45%" />
+</p>
 
 ![Voronoi diagram approximation](./images/voronoi_simulation_1.png)
 
@@ -39,7 +42,10 @@
 
 ![Traversing SO-Population size parameter space](./images/soVsPopulationSize.png)
 
-![Effect of disabling mass presevation condition](./images/mass_preservation_difference.png) ![Biological approximation](./images/biology_approximation.png)
+<p align="center">
+  <img src="./images/mass_preservation_difference.png" alt="Effect of disabling mass presevation condition" width="45%" />
+  <img src="./images/biology_approximation.png" alt="Comparing biological and simulated Physarum" width="45%" />
+</p>
 
 ## References
 - [Original algorithm article (Jeff Jones, 2010)](https://direct.mit.edu/artl/article/16/2/127/2650/Characteristics-of-Pattern-Formation-and-Evolution)
