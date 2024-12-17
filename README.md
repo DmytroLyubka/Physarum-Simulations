@@ -8,24 +8,38 @@
 
 ## Images
 ![Visualation technique examples](./images/visualisationExamples.png)
+
 ![Example of system evolution](./images/visualisation_example_1.png)
+
 ![Extended algorithm example 1](./images/extended_algorithm_example_1.png)
+
 ![Pattern types](./images/pattern_types.png)
+
 ![Pattern evolution 2](./images/evolution_2.png)
+
 ![Pattern evolution 3](./images/evolution_3.png)
+
 ![Pattern evolution 4](./images/evolution_4.png)
+
 ![3 point Steiner tree](./images/steiner_3.png)
+
 ![4 point Steiner tree](./images/steiner_4.png)
-![Comparing simulated Steiner tree 1 to accurate graph](./images/steiner_simulation_1.png)
-![Comparing simulated Steiner tree 2 to accurate graph](./images/steiner_simulation_2.png)
+
+![Comparing simulated Steiner tree 1 to accurate graph](./images/steiner_simulation_1.png) ![Comparing simulated Steiner tree 2 to accurate graph](./images/steiner_simulation_2.png)
+
 ![Voronoi diagram approximation](./images/voronoi_simulation_1.png)
+
 ![Traversing RA-SA parameter space with agent collision](./images/raVsSa.png)
+
 ![Traversing RA-SA parameter space without agent collision](./images/raVsSa_withoutCollision.png)
-![Effect of disabling mass presevation condition](./images/mass_preservation_difference.png)
+
 ![Hexagonal pattern formation without agent collision](./images/hexagonalPattern_noCollision.png)
+
 ![Square pattern formation with agent collision](./images/squarePattern.png)
+
 ![Traversing SO-Population size parameter space](./images/soVsPopulationSize.png)
-![Biological approximation](./images/biology_approximation.png)
+
+![Effect of disabling mass presevation condition](./images/mass_preservation_difference.png) ![Biological approximation](./images/biology_approximation.png)
 
 ## References
 - [Original algorithm article (Jeff Jones, 2010)](https://direct.mit.edu/artl/article/16/2/127/2650/Characteristics-of-Pattern-Formation-and-Evolution)
