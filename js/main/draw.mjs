@@ -154,7 +154,7 @@ const shaderDrawAgents = () => {
     for (let x = 0; x < bufferImage.width; x++) {
         for (let y = 0; y < bufferImage.height; y++) {
             bufferImage.pixels[(x * 4) + 0 + (y * 4 * bufferImage.width)] = algorithm.physicalMap[x][y] * 256 // R channel
-
+            
             /* A channel. Has a weird effect in the shader, somehow responsible for pixel fade-in
                of pixels over time EVEN when the alpha channel isn't sampled from the texture and
                we use a constant alpha value in gl_FragColor. There must be some sort of implicit

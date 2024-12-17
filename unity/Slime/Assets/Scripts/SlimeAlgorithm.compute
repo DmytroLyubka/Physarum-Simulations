@@ -27,7 +27,7 @@ float repellentStrength; // increase to movement speed when repellent is found
 bool extendedAlgorithm; // toggles extended algorithm features
 
 // Computes a random 32-bit uint in the range 0 to 4294967295.
-// https://www.pcg-random.org/index.html
+// https://www.pcg-random.org/index.html, https://www.shadertoy.com/view/XlGcRh
 uint pcgHash(uint input)
 {
     uint state = input * 747796405u + 2891336453u;
@@ -38,7 +38,7 @@ uint pcgHash(uint input)
 // Scales pcgHash() output to the range 0 and 1.
 float scale(uint input)
 {
-    // 4294967295 = maximum value of a 32-bit unsigned int
+    // 4294967295 = max value of uint32
     return input / 4294967295.0;
 }
 
@@ -137,20 +137,20 @@ void AlgorithmStep (uint3 id : SV_DispatchThreadID)
         {
             // pass
         }
-        /* Note: It doesn't really make sense to have the choice between left and right
-        * rotation be random here? The fact that the front sensor is detecting a weaker
-        * chemoattractant than the two off-centre sensors does not imply that the left
-        * and right sensors have equal chemoattractant concentration, it is very much
-        * possible that the left sensor has detected a higher trail value while at the
-        * same time the front sensor has detected the lowest trail value (in which case
-        * the agent should rotate left).
-        * 
-        * TODO: Make this step more deterministic, only have rotation choice be random if
-        * left and right sensors have the same trail value, both of which must be higher
-        * than that of the front sensor.
+        /* Note: It doesn't quite make sense to have the choice between left and right
+        * rotation be random here, despite the original paper detailing it as such.
+        * The fact that the front sensor is detecting a weaker chemoattractant than the
+        * two off-centre sensors does not imply that the left and right sensors have
+        * equal chemoattractant concentration, it is possible that left sensor has
+        * detected a higher trail value while at the same time the front sensor has
+        * detected the lowest trail value, in which case the agent should rotate left.
         */
         else if (frontTrailValue < leftTrailValue && frontTrailValue < rightTrailValue)
         {
+            /* A more deterministic procedure, only have rotation choice be random if
+            * left and right sensors have the same trail value, both of which must be higher
+            * than that of the front sensor.
+            */
             // // Turn right
             // if (rightTrailValue > leftTrailValue)
             // {
@@ -163,10 +163,6 @@ void AlgorithmStep (uint3 id : SV_DispatchThreadID)
             // }
             // else
             // {
-            //     /* All sensor trail values are equal - maybe have random choice of rotation direction
-            //         * here?
-            //         */
-            //     // pass
             //     if (scale(random) > 0.5)
             //     {
             //         agents[id.x].angle += agentRotationAngle;
@@ -176,6 +172,8 @@ void AlgorithmStep (uint3 id : SV_DispatchThreadID)
             //         agents[id.x].angle -= agentRotationAngle;
             //     }
             // }
+
+            // Random rotation, as per the original paper
             if (scale(random) > 0.5)
             {
                 agents[id.x].angle += agentRotationAngle;
@@ -204,21 +202,16 @@ void AlgorithmStep (uint3 id : SV_DispatchThreadID)
             // pass
         }
     }
-    /* One of the sensors found a repellent: CUSTOM ALGORITHM for deciding on rotation direction + magnitude.
-     * If we find a paper that details a repellent algorithm then we should test it out. Meanwhile, we need
-     * to implement our own.
-     */
+    // One of the sensors found a repellent: Custom algorithm for deciding on rotation direction + magnitude.
     else
     {
         repellentFound = true;
-        /* All trail values are negative, randomly rotate. We could maybe make this more deterministic
-         * and rotate in the direction of the largest trail value?
-         */
+        // All trail values are negative, randomly rotate.
         if (leftTrailValue < 0 && frontTrailValue < 0 && rightTrailValue < 0)
         {
             /* If the agent can't find a good path and there's repellent everywhere, then we don't want it
              * to deposit a trail as that's a false positive for the surrounding agents. Instead, we treat
-             * it's destination position as being taken and later on randomly orient the agent.
+             * its destination position as being taken and later on randomly orient the agent.
              */
             newPositionOccupied = true;
         }
@@ -344,7 +337,7 @@ void AlgorithmStep (uint3 id : SV_DispatchThreadID)
     // Collision with attractant chemical
     if (approx(chemicalSourceMap[int2(newPosition)].w, 1.0))
     {
-        newPositionOccupied = true;
+        // newPositionOccupied = true;
     }
 
     if (circularDomain) // circular boundary
@@ -487,8 +480,7 @@ void RefreshChemicalValues (uint3 id : SV_DispatchThreadID)
 bool polygonCircle; // toggles helper circle for polygon vertex placement
 
 /* Overlays chemical source map image onto output texture. Purely a visual effect. Very helpful
- * during testing, but it doesn't look very good. We'll need to improve this later to get
- * cleaner, more visually appealing outputs.
+ * during testing.
  */
 [numthreads(8,8,1)]
 void ChemicalSourceOverlay (uint3 id : SV_DispatchThreadID)

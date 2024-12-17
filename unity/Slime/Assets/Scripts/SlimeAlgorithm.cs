@@ -318,10 +318,6 @@ public class SlimeAlgorithm : MonoBehaviour
 		Dispatch(algorithmComputeShader, width, height, 1, kernelIndex: 2); // RefreshChemicalValues
 		
 		Graphics.Blit(processedTrailMap, trailMap);
-		if (chemicalSourceOverlay)
-		{
-			Dispatch(algorithmComputeShader, width, height, 1, kernelIndex: 3); // ChemicalSourceOverlay
-		}
 	}
 
 	/// <summary>
@@ -389,7 +385,11 @@ public class SlimeAlgorithm : MonoBehaviour
 			if (algorithmSteps != algorithmStepBreakPoint && !stopAlgorithm)
 			{
 				algorithmSteps++;
-				AlgorithmStep();	
+				AlgorithmStep();
+			}
+			if (chemicalSourceOverlay)
+			{
+				Dispatch(algorithmComputeShader, width, height, 1, kernelIndex: 3); // ChemicalSourceOverlay
 			}
 		}
 		
@@ -411,7 +411,7 @@ public class SlimeAlgorithm : MonoBehaviour
 
 	/// <summary>
 	/// Dispatches compute shader using an appropriate number of thread groups in each dimensions.
-	/// Credits: SebLague
+	/// Credits: SebLague, https://github.com/SebLague/Slime-Simulation/blob/6794cfdf584f71c657bd16366e31bf422be99ee6/Assets/Scripts/Compute%20Helper/ComputeHelper.cs#L27
 	/// </summary>
 	void Dispatch(ComputeShader shader, int threadsX, int threadsY, int threadsZ, int kernelIndex)
 	{
